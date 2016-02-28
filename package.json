@@ -1,0 +1,29 @@
+{
+  "name": "sparks-backend",
+  "version": "1.0.0",
+  "description": "sparks backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdebaun/sparks-backend.git"
+  },
+  "author": "'sdebaun' <'sdebaun74@gmail.com'>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sdebaun/sparks-backend/issues"
+  },
+  "homepage": "https://github.com/sdebaun/sparks-backend#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-nodemon": "^2.0.6",
+    "gulp-plumber": "^1.1.0"
+  },
+  "dependencies": {
+    "firebase": "^2.4.1",
+    "firebase-queue": "^1.2.1"
+  }
+}
