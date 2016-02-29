@@ -16,14 +16,17 @@ const makeQueue = ref => {
   return out$.share()
 }
 
-const queue$ = makeQueue(fb)
+const queue$ = makeQueue(fb.child('!queue'))
 
-const profiles$ = queue$
-  .filter(({domain}) => domain == 'Profiles')
+const projects$ = queue$
+  .filter(({domain}) => domain == 'Projects')
 
-const create$ = profiles$
+const create$ = projects$
   .filter(({action}) => action == 'create')
-  .subscribe(({client,payload}) => console.log('update'))
+  .subscribe(({client,payload}) => {
+    console.log('new project',payload)
+    fb.child('Projects').push(payload)
+  })
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
 //     this.queue = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{

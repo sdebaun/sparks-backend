@@ -26,20 +26,22 @@ var makeQueue = function makeQueue(ref) {
   return out$.share();
 };
 
-var queue$ = makeQueue(fb);
+var queue$ = makeQueue(fb.child('!queue'));
 
-var profiles$ = queue$.filter(function (_ref) {
+var projects$ = queue$.filter(function (_ref) {
   var domain = _ref.domain;
-  return domain == 'Profiles';
+  return domain == 'Projects';
 });
 
-var create$ = profiles$.filter(function (_ref2) {
+var create$ = projects$.filter(function (_ref2) {
   var action = _ref2.action;
   return action == 'create';
 }).subscribe(function (_ref3) {
   var client = _ref3.client;
   var payload = _ref3.payload;
-  return console.log('update');
+
+  console.log('new project', payload);
+  fb.child('Projects').push(payload);
 });
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
