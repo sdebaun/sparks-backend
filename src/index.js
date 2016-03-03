@@ -1,51 +1,15 @@
-import {Observable,Subject} from 'rx'
 import Firebase from 'firebase'
-import FirebaseQueue from 'firebase-queue'
+import {makeQueue, makeOnce} from './firebase-streams'
 
-const fbRoot = new Firebase('http://sparks-development.firebaseio.com')
+const fb = new Firebase('http://sparks-development.firebaseio.com')
 
-const FirebaseLookup = (ref) =>
-  Observable.create(obs => ref.once('value', (snap) => {obs.onNext(snap); obs.onCompleted()}))
-    .map(snap => snap.val())
+const {queue$, respond} = makeQueue(fb.child('!queue'))
 
-const fbDriver = ref => {
+const once = makeOnce(fb)
 
-  // there are other chainable firebase query buiders, this is wot we need now
-  const query = (parentRef,{orderByChild,equalTo}) => {
-    let childRef = parentRef
-    if (orderByChild) { childRef = childRef.orderByChild(orderByChild) }
-    if (equalTo) { childRef = childRef.equalTo(equalTo) }
-    return childRef
-  }
+const profileKey$ = queue$.flatMapLatest(({uid}) => once('Users',uid))
 
-  // used to build fb ref, each value passed is either child or k:v query def
-  const chain = (a,v) => typeof v === 'object' && query(a,v) || a.child(v)
-
-  // building query from fb api is simply mapping the args to chained fn calls
-  const build = (args) => FirebaseLookup(args.reduce(chain,ref))
-
-  return (...args) => build(args)
-}
-
-const makeQueue = ref => {
-  const tasks$ = new Subject()
-
-  const fbQ = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{
-    console.log('task received',data)
-    tasks$.onNext(data)
-    resolve()
-  })
-
-  return tasks$.share()
-}
-
-const fb = fbDriver(fbRoot)
-
-const queue$ = makeQueue(fbRoot.child('!queue'))
-
-const profileKey$ = queue$.flatMapLatest(({uid}) => fb('Users',uid))
-
-const profile$ = profileKey$.flatMapLatest(key => fb('Profiles',key))
+const profile$ = profileKey$.flatMapLatest(key => once('Profiles',key))
 
 const authedQueue$ = queue$
   .zip(profileKey$, profile$)
@@ -57,10 +21,14 @@ const projects$ = authedQueue$
 
 const create$ = projects$
   .filter(({action}) => action == 'create')
-  .subscribe(({profile,profileKey,payload}) => {
+  .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('new project',payload)
-    fbRoot.child('Projects').push({...payload,ownerProfileKey:profileKey})
+    const ref = fb.child('Projects').push({...payload,ownerProfileKey:profileKey})
+    respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
   })
+
+
+
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
 //     this.queue = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{
