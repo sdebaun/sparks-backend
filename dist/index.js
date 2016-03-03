@@ -1,5 +1,11 @@
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var _rx = require('rx');
 
 var _firebase = require('firebase');
@@ -12,36 +18,105 @@ var _firebaseQueue2 = _interopRequireDefault(_firebaseQueue);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var fb = new _firebase2.default('http://sparks-development.firebaseio.com');
+var fbRoot = new _firebase2.default('http://sparks-development.firebaseio.com');
+
+var FirebaseLookup = function FirebaseLookup(ref) {
+  return _rx.Observable.create(function (obs) {
+    return ref.once('value', function (snap) {
+      obs.onNext(snap);obs.onCompleted();
+    });
+  }).map(function (snap) {
+    return snap.val();
+  });
+};
+
+var fbDriver = function fbDriver(ref) {
+
+  // there are other chainable firebase query buiders, this is wot we need now
+  var query = function query(parentRef, _ref) {
+    var orderByChild = _ref.orderByChild;
+    var equalTo = _ref.equalTo;
+
+    var childRef = parentRef;
+    if (orderByChild) {
+      childRef = childRef.orderByChild(orderByChild);
+    }
+    if (equalTo) {
+      childRef = childRef.equalTo(equalTo);
+    }
+    return childRef;
+  };
+
+  // used to build fb ref, each value passed is either child or k:v query def
+  var chain = function chain(a, v) {
+    return (typeof v === 'undefined' ? 'undefined' : _typeof(v)) === 'object' && query(a, v) || a.child(v);
+  };
+
+  // building query from fb api is simply mapping the args to chained fn calls
+  var build = function build(args) {
+    return FirebaseLookup(args.reduce(chain, ref));
+  };
+
+  return function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return build(args);
+  };
+};
 
 var makeQueue = function makeQueue(ref) {
-  var out$ = new _rx.Subject();
+  var tasks$ = new _rx.Subject();
 
   var fbQ = new _firebaseQueue2.default(ref, function (data, progress, resolve, reject) {
     console.log('task received', data);
-    out$.onNext(data);
+    tasks$.onNext(data);
     resolve();
   });
 
-  return out$.share();
+  return tasks$.share();
 };
 
-var queue$ = makeQueue(fb.child('!queue'));
+var fb = fbDriver(fbRoot);
 
-var projects$ = queue$.filter(function (_ref) {
-  var domain = _ref.domain;
+var queue$ = makeQueue(fbRoot.child('!queue'));
+
+var profileKey$ = queue$.flatMapLatest(function (_ref2) {
+  var uid = _ref2.uid;
+  return fb('Users', uid);
+});
+
+var profile$ = profileKey$.flatMapLatest(function (key) {
+  return fb('Profiles', key);
+});
+
+var authedQueue$ = queue$.zip(profileKey$, profile$).map(function (_ref3) {
+  var _ref4 = _slicedToArray(_ref3, 3);
+
+  var task = _ref4[0];
+  var profileKey = _ref4[1];
+  var profile = _ref4[2];
+  return _extends({}, task, { profileKey: profileKey, profile: profile });
+}).doAction(function (x) {
+  return console.log('authedQueue:', x);
+});
+
+var projects$ = authedQueue$.filter(function (_ref5) {
+  var domain = _ref5.domain;
   return domain == 'Projects';
 });
 
-var create$ = projects$.filter(function (_ref2) {
-  var action = _ref2.action;
+var create$ = projects$.filter(function (_ref6) {
+  var action = _ref6.action;
   return action == 'create';
-}).subscribe(function (_ref3) {
-  var client = _ref3.client;
-  var payload = _ref3.payload;
+}).subscribe(function (_ref7) {
+  var profile = _ref7.profile;
+  var profileKey = _ref7.profileKey;
+  var payload = _ref7.payload;
 
   console.log('new project', payload);
-  fb.child('Projects').push(payload);
+  fbRoot.child('Projects').push(_extends({}, payload, { ownerProfileKey: profileKey }));
 });
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
