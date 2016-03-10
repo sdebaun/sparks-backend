@@ -19,7 +19,7 @@ const authedQueue$ = queue$
 const projects$ = authedQueue$
   .filter(({domain}) => domain == 'Projects')
 
-const create$ = projects$
+const createProject$ = projects$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('new project',payload)
@@ -27,6 +27,16 @@ const create$ = projects$
     respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
   })
 
+const organizers$ = authedQueue$
+  .filter(({domain}) => domain == 'Organizers')
+
+const createOrganizer$ = organizers$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create organizer',payload)
+    const ref = fb.child('Organizers').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
+  })
 
 
 // export class FirebaseRespondingQueue {
