@@ -1,4 +1,5 @@
 import Firebase from 'firebase'
+import {Observable} from 'rx'
 import {makeQueue, makeOnce} from './firebase-streams'
 
 const fb = new Firebase('http://sparks-development.firebaseio.com')
@@ -9,7 +10,7 @@ const once = makeOnce(fb)
 
 const profileKey$ = queue$.flatMapLatest(({uid}) => once('Users',uid))
 
-const profile$ = profileKey$.flatMapLatest(key => once('Profiles',key))
+const profile$ = profileKey$.flatMapLatest(key => key && once('Profiles',key) || Observable.just(null))
 
 const authedQueue$ = queue$
   .zip(profileKey$, profile$)
@@ -36,6 +37,18 @@ const createOrganizer$ = organizers$
     console.log('create organizer',payload)
     const ref = fb.child('Organizers').push({...payload,authorProfileKey:profileKey})
     respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
+  })
+
+const profiles$ = authedQueue$
+  .filter(({domain}) => domain == 'Profiles')
+
+const createProfile$ = profiles$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create profile',payload)
+    const ref = fb.child('Profiles').push({...payload,isAdmin:false,isConfirmed:true})
+    const userRef = fb.child('Users').child(uid).set(ref.key())
+    respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
   })
 
 
