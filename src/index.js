@@ -46,8 +46,17 @@ const createProfile$ = profiles$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create profile',payload)
-    const ref = fb.child('Profiles').push({...payload,isAdmin:false,isConfirmed:true})
+    const obj = {
+      ...payload,
+      uid,
+      isAdmin: false,
+      isConfirmed: true,
+    }
+
+    const ref = fb.child('Profiles').push(obj)
+
     const userRef = fb.child('Users').child(uid).set(ref.key())
+    
     respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
   })
 
