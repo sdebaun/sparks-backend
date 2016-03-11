@@ -1,32 +1,57 @@
-import {Observable,Subject} from 'rx'
 import Firebase from 'firebase'
-import FirebaseQueue from 'firebase-queue'
+import {Observable} from 'rx'
+import {makeQueue, makeOnce} from './firebase-streams'
 
 const fb = new Firebase('http://sparks-development.firebaseio.com')
 
-const makeQueue = ref => {
-  const out$ = new Subject()
+const {queue$, respond} = makeQueue(fb.child('!queue'))
 
-  const fbQ = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{
-    console.log('task received',data)
-    out$.onNext(data)
-    resolve()
-  })
+const once = makeOnce(fb)
 
-  return out$.share()
-}
+const profileKey$ = queue$.flatMapLatest(({uid}) => once('Users',uid))
 
-const queue$ = makeQueue(fb.child('!queue'))
+const profile$ = profileKey$.flatMapLatest(key => key && once('Profiles',key) || Observable.just(null))
 
-const projects$ = queue$
+const authedQueue$ = queue$
+  .zip(profileKey$, profile$)
+  .map(([task, profileKey, profile]) => ({...task, profileKey, profile}))
+  .doAction(x => console.log('authedQueue:',x))
+
+const projects$ = authedQueue$
   .filter(({domain}) => domain == 'Projects')
 
-const create$ = projects$
+const createProject$ = projects$
   .filter(({action}) => action == 'create')
-  .subscribe(({client,payload}) => {
+  .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('new project',payload)
-    fb.child('Projects').push(payload)
+    const ref = fb.child('Projects').push({...payload,ownerProfileKey:profileKey})
+    respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
   })
+
+const organizers$ = authedQueue$
+  .filter(({domain}) => domain == 'Organizers')
+
+const createOrganizer$ = organizers$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create organizer',payload)
+    const ref = fb.child('Organizers').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
+  })
+
+const profiles$ = authedQueue$
+  .filter(({domain}) => domain == 'Profiles')
+
+const createProfile$ = profiles$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create profile',payload)
+    const ref = fb.child('Profiles').push({...payload,isAdmin:false,isConfirmed:true})
+    const userRef = fb.child('Users').child(uid).set(ref.key())
+    respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
+  })
+
+
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
 //     this.queue = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{
