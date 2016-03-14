@@ -72,13 +72,13 @@ const createProfile$ = profiles$
   })
 
 const opps$ = authedQueue$
-  .filter(({domain}) => domain == 'Opportunities')
+  .filter(({domain}) => domain == 'Opps')
 
 const createOpp$ = opps$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create opp',payload)
-    const ref = fb.child('Opportunities').push({...payload,authorProfileKey:profileKey})
+    const ref = fb.child('Opps').push({...payload,authorProfileKey:profileKey})
     respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
   })
 
