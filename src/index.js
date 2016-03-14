@@ -71,6 +71,17 @@ const createProfile$ = profiles$
     respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
   })
 
+const opps$ = authedQueue$
+  .filter(({domain}) => domain == 'Opportunities')
+
+const createOpp$ = opps$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create opp',payload)
+    const ref = fb.child('Opportunities').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
+  })
+
 
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
