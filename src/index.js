@@ -39,6 +39,17 @@ const createOrganizer$ = organizers$
     respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
   })
 
+const teams$ = authedQueue$
+  .filter(({domain}) => domain == 'Teams')
+
+const createTeam$ = teams$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create team',payload)
+    const ref = fb.child('Teams').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Teams', event:'create', payload:ref.key()})
+  })
+
 const profiles$ = authedQueue$
   .filter(({domain}) => domain == 'Profiles')
 
@@ -58,6 +69,17 @@ const createProfile$ = profiles$
     const userRef = fb.child('Users').child(uid).set(ref.key())
     
     respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
+  })
+
+const opps$ = authedQueue$
+  .filter(({domain}) => domain == 'Opps')
+
+const createOpp$ = opps$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create opp',payload)
+    const ref = fb.child('Opps').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
   })
 
 
