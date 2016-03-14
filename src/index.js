@@ -39,6 +39,17 @@ const createOrganizer$ = organizers$
     respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
   })
 
+const teams$ = authedQueue$
+  .filter(({domain}) => domain == 'Teams')
+
+const createTeam$ = teams$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create team',payload)
+    const ref = fb.child('Teams').push({...payload,authorProfileKey:profileKey})
+    respond(uid,{domain:'Teams', event:'create', payload:ref.key()})
+  })
+
 const profiles$ = authedQueue$
   .filter(({domain}) => domain == 'Profiles')
 
