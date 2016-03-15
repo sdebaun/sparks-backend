@@ -28,6 +28,18 @@ const createProject$ = projects$
     respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
   })
 
+const projectImages$ = authedQueue$
+  .filter(({domain}) => domain == 'ProjectImages')
+
+const setProjectImages$ = projectImages$
+  .filter(({action}) => action == 'set')
+  .subscribe(({uid, payload: {key, values}}) => {
+    const domain = 'ProjectImages'
+    console.log('key',key,'values',values)
+    const ref = fb.child(domain).child(key).set(values)
+    respond(uid, {domain, event: 'set', payload: key})
+  })
+
 const organizers$ = authedQueue$
   .filter(({domain}) => domain == 'Organizers')
 
@@ -67,7 +79,7 @@ const createProfile$ = profiles$
     const ref = fb.child('Profiles').push(obj)
 
     const userRef = fb.child('Users').child(uid).set(ref.key())
-    
+
     respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
   })
 
@@ -170,7 +182,7 @@ const createOpp$ = opps$
 //           Organizers.get(organizerKey)
 //           .then( organizerSnap=>organizerSnap.val().projectKey )
 //         )
-//       )    
+//       )
 //   },
 
 //   ProjectImages: {
@@ -184,7 +196,7 @@ const createOpp$ = opps$
 //       .then( projectSnap=>
 //         Teams.push({...payload,project:projectSnap.val()})
 //         .then( ref=>ref.key() )
-//       ), 
+//       ),
 //     update: ({key,vals},client)=>
 //       Teams.update(key,vals).then( ()=>{ // auth check if project manager
 //         Leads.updateBy('teamKey',key,{team:vals})
@@ -204,7 +216,7 @@ const createOpp$ = opps$
 //         const {project,...team} = teamSnap.val(),
 //           projectKey = team.projectKey
 //         Leads.push({...payload,team,projectKey,project})
-//         .then( ref=>ref.key() ) // auth check if project manager        
+//         .then( ref=>ref.key() ) // auth check if project manager
 //       }),
 //     accept: ({leadKey},client)=>
 //       getAuth(client).then( profile=>
@@ -218,12 +230,12 @@ const createOpp$ = opps$
 //       .then( projectSnap=>
 //         Opps.push({...payload,project:projectSnap.val()})
 //         .then( ref=>ref.key() )
-//       ), 
+//       ),
 //     update: ({key,vals},client)=> // auth check if project manager or team lead
 //       Opps.update(key,vals).then( ()=>{
 //         Offers.updateBy('oppKey',key,{opp:vals})
 //         return true
-//       }), 
+//       }),
 //     setPublic: ({key,val})=> // auth check if project manager or team lead
 //       Opps.update(key,{isPublic:!!val}),
 //     setOpen: ({key,val})=> // auth check if project manager or team lead
@@ -275,7 +287,7 @@ const createOpp$ = opps$
 //     console.log('Could not find handler for collection', collection)
 //     resolve()
 //   })
-  
+
 // export const mutator = handlers => ({client,collection,op,payload}) => {
 //   console.log('received',client,collection,op)
 //   const handler = (handlers[collection] && handlers[collection][op]) || handlerNotFound(collection)
@@ -347,7 +359,7 @@ const createOpp$ = opps$
 //   //     push: payload=>ref.push(payload),
 //   //     set: (key,val)=>ref.child(key).set(val),
 //   //     update: (key,vals)=>ref.child(key).update(vals),
-//   //     response: (op,payload)=>{ return {collection:ref.key(),op,payload} }      
+//   //     response: (op,payload)=>{ return {collection:ref.key(),op,payload} }
 //   //   }
 //   //   for (let k of Object.keys(ops)) {
 //   //     this[k] = partialRight(ops[k],[actions]).bind(this)
