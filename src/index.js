@@ -31,12 +31,13 @@ const createProject$ = projects$
 const projectImages$ = authedQueue$
   .filter(({domain}) => domain == 'ProjectImages')
 
-const createProjectImages$ = projectImages$
-  .filter(({action}) => action == 'create')
-  .subscribe(({uid, payload}) => {
+const setProjectImages$ = projectImages$
+  .filter(({action}) => action == 'set')
+  .subscribe(({uid, payload: {key, values}}) => {
     const domain = 'ProjectImages'
-    const ref = fb.child(domain).push({...payload})
-    respond(uid, {domain, event: 'create', payload: ref.key()})
+    console.log('key',key,'values',values)
+    const ref = fb.child(domain).child(key).set(values)
+    respond(uid, {domain, event: 'set', payload: key})
   })
 
 const organizers$ = authedQueue$
