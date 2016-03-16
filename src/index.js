@@ -2,6 +2,8 @@ import Firebase from 'firebase'
 import {Observable} from 'rx'
 import {makeQueue, makeOnce} from './firebase-streams'
 
+const log = label => msg => console.log(label,msg)
+
 const fb = new Firebase('http://sparks-development.firebaseio.com')
 
 const {queue$, respond} = makeQueue(fb.child('!queue'))
@@ -15,7 +17,9 @@ const profile$ = profileKey$.flatMapLatest(key => key && once('Profiles',key) ||
 const authedQueue$ = queue$
   .zip(profileKey$, profile$)
   .map(([task, profileKey, profile]) => ({...task, profileKey, profile}))
-  .doAction(x => console.log('authedQueue:',x))
+  // .doAction(x => console.log('authedQueue:',x))
+
+// authedQueue$.subscribe(x => console.log('authed:',x))
 
 const projects$ = authedQueue$
   .filter(({domain}) => domain == 'Projects')
@@ -94,6 +98,39 @@ const createOpp$ = opps$
     respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
   })
 
+const updateOpp$ = opps$
+  .filter(({action}) => action == 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update opp', key, values)
+    const ref = fb.child('Opps').child(key).update(values)
+    respond(uid,{domain:'Opps', event:'update', payload: key})
+  })
+
+const fulfillers$ = authedQueue$
+  .filter(({domain}) => domain == 'Fulfillers')
+
+const createFulfillers$ = fulfillers$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create fulfiller',payload)
+    const ref = fb.child('Fulfillers').push({...payload, authorProfileKey: profileKey})
+    respond(uid,{domain:'Fulfillers', event:'create', payload:ref.key()})
+  })
+
+const deleteFulfillers$ = fulfillers$
+  .filter(({action}) => action == 'delete')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete fulfiller',payload)
+    const ref = fb.child('Fulfillers').child(payload).remove()
+    respond(uid,{domain:'Fulfillers', event:'delete', payload:payload})
+  })
+
+  // .subscribe(({uid, payload: {key, values}}) => {
+  //   const domain = 'ProjectImages'
+  //   console.log('key',key,'values',values)
+  //   const ref = fb.child(domain).child(key).set(values)
+  //   respond(uid, {domain, event: 'set', payload: key})
+  // })
 
 // export class FirebaseRespondingQueue {
 //   constructor(ref,handle,respond) {
