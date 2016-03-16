@@ -89,7 +89,6 @@ const createProfile$ = profiles$
 
 const opps$ = authedQueue$
   .filter(({domain}) => domain == 'Opps')
-  // .shareReplay(1)
 
 const createOpp$ = opps$
   .filter(({action}) => action == 'create')
@@ -103,10 +102,21 @@ const updateOpp$ = opps$
   .filter(({action}) => action == 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update opp', key, values)
-    // const ref = fb.child('Opps').push({...payload,authorProfileKey:profileKey})
     const ref = fb.child('Opps').child(key).update(values)
     respond(uid,{domain:'Opps', event:'update', payload: key})
   })
+
+const fulfillers$ = authedQueue$
+  .filter(({domain}) => domain == 'Fulfillers')
+
+const createFulfillers$ = fulfillers$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create fulfiller',payload)
+    const ref = fb.child('Fulfillers').push({...payload, authorProfileKey: profileKey})
+    respond(uid,{domain:'Fulfillers', event:'create', payload:ref.key()})
+  })
+
 
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
