@@ -125,6 +125,31 @@ const deleteFulfillers$ = fulfillers$
     respond(uid,{domain:'Fulfillers', event:'delete', payload:payload})
   })
 
+const engagements$ = authedQueue$
+  .filter(({domain}) => domain == 'Engagements')
+
+const createEngagement$ = engagements$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create Engagements',payload)
+    const ref = fb.child('Engagements').push({
+      ...payload,
+      authorProfileKey: profileKey,
+      isApplied: true,
+      isAccepted: false,
+      isConfirmed: false,
+    })
+    respond(uid,{domain:'Engagements', event:'create', payload:ref.key()})
+  })
+
+const deleteEngagement$ = engagements$
+  .filter(({action}) => action == 'delete')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete Engagements',payload)
+    const ref = fb.child('Engagements').child(payload).remove()
+    respond(uid,{domain:'Engagements', event:'delete', payload:payload})
+  })
+
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
   //   console.log('key',key,'values',values)
