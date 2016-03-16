@@ -117,6 +117,13 @@ const createFulfillers$ = fulfillers$
     respond(uid,{domain:'Fulfillers', event:'create', payload:ref.key()})
   })
 
+const deleteFulfillers$ = fulfillers$
+  .filter(({action}) => action == 'delete')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete fulfiller',payload)
+    const ref = fb.child('Fulfillers').child(payload).remove()
+    respond(uid,{domain:'Fulfillers', event:'delete', payload:payload})
+  })
 
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
