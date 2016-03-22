@@ -150,6 +150,26 @@ const deleteEngagement$ = engagements$
     respond(uid,{domain:'Engagements', event:'delete', payload:payload})
   })
 
+const commitments$ = authedQueue$
+  .filter(({domain}) => domain == 'Commitments')
+
+const createCommitment$ = commitments$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create Commitments',payload)
+    const ref = fb.child('Commitments').push(payload)
+    respond(uid,{domain:'Commitments', event:'create', payload:ref.key()})
+  })
+
+const deleteCommitment$ = engagements$
+  .filter(({action}) => action == 'delete')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete Commitments',payload)
+    const ref = fb.child('Commitments').child(payload).remove()
+    respond(uid,{domain:'Commitments', event:'delete', payload:payload})
+  })
+
+
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
   //   console.log('key',key,'values',values)
