@@ -161,7 +161,7 @@ const createCommitment$ = commitments$
     respond(uid,{domain:'Commitments', event:'create', payload:ref.key()})
   })
 
-const removeCommitment$ = engagements$
+const removeCommitment$ = commitments$
   .filter(({action}) => action == 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('remove Commitments',payload)
