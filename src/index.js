@@ -161,12 +161,12 @@ const createCommitment$ = commitments$
     respond(uid,{domain:'Commitments', event:'create', payload:ref.key()})
   })
 
-const deleteCommitment$ = engagements$
-  .filter(({action}) => action == 'delete')
+const removeCommitment$ = engagements$
+  .filter(({action}) => action == 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
-    console.log('delete Commitments',payload)
+    console.log('remove Commitments',payload)
     const ref = fb.child('Commitments').child(payload).remove()
-    respond(uid,{domain:'Commitments', event:'delete', payload:payload})
+    respond(uid,{domain:'Commitments', event:'remove', payload:payload})
   })
 
 
