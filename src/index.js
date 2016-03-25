@@ -55,15 +55,47 @@ const createOrganizer$ = organizers$
     respond(uid,{domain:'Organizers', event:'create', payload:ref.key()})
   })
 
+const deleteOrganizer$ = organizers$
+  .filter(({action}) => action == 'remove')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('remove Organizers',payload)
+    const ref = fb.child('Organizers').child(payload).remove()
+    respond(uid,{domain:'Organizers', event:'remove', payload:payload})
+  })
+
 const teams$ = authedQueue$
   .filter(({domain}) => domain == 'Teams')
 
 const createTeam$ = teams$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
-    console.log('create team',payload)
-    const ref = fb.child('Teams').push({...payload,authorProfileKey:profileKey})
-    respond(uid,{domain:'Teams', event:'create', payload:ref.key()})
+    once('Projects', payload.projectKey).subscribe(project => {
+      console.log('project:', project)
+      payload.project = project
+      console.log('create team',payload)
+      const ref = fb.child('Teams').push({...payload,authorProfileKey:profileKey})
+      respond(uid,{domain:'Teams', event:'create', payload:ref.key()})
+    })
+  })
+
+const updateTeam$ = teams$
+  .filter(({action}) => action == 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update Team', key, values)
+    const ref = fb.child('Teams').child(key).update(values)
+    respond(uid,{domain:'Teams', event:'update', payload: key})
+  })
+
+const teamImages$ = authedQueue$
+  .filter(({domain}) => domain == 'TeamImages')
+
+const setTeamImages$ = teamImages$
+  .filter(({action}) => action == 'set')
+  .subscribe(({uid, payload: {key, values}}) => {
+    const domain = 'TeamImages'
+    console.log('key',key,'values',values)
+    const ref = fb.child(domain).child(key).set(values)
+    respond(uid, {domain, event: 'set', payload: key})
   })
 
 const profiles$ = authedQueue$
@@ -93,9 +125,12 @@ const opps$ = authedQueue$
 const createOpp$ = opps$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
-    console.log('create opp',payload)
-    const ref = fb.child('Opps').push({...payload,authorProfileKey:profileKey})
-    respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
+    once('Projects', payload.projectKey).subscribe(project => {
+      payload.project = project
+      console.log('create opp',payload)
+      const ref = fb.child('Opps').push({...payload,authorProfileKey:profileKey})
+      respond(uid,{domain:'Opps', event:'create', payload:ref.key()})
+    })
   })
 
 const updateOpp$ = opps$
@@ -131,23 +166,26 @@ const engagements$ = authedQueue$
 const createEngagement$ = engagements$
   .filter(({action}) => action == 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
-    console.log('create Engagements',payload)
-    const ref = fb.child('Engagements').push({
-      ...payload,
-      authorProfileKey: profileKey,
-      isApplied: true,
-      isAccepted: false,
-      isConfirmed: false,
+    once('Opps', payload.oppKey).subscribe(opp => {
+      payload.opp = opp
+      console.log('create Engagements',payload)
+      const ref = fb.child('Engagements').push({
+        ...payload,
+        authorProfileKey: profileKey,
+        isApplied: true,
+        isAccepted: false,
+        isConfirmed: false,
+      })
+      respond(uid,{domain:'Engagements', event:'create', payload:ref.key()})
     })
-    respond(uid,{domain:'Engagements', event:'create', payload:ref.key()})
   })
 
 const deleteEngagement$ = engagements$
-  .filter(({action}) => action == 'delete')
+  .filter(({action}) => action == 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('delete Engagements',payload)
     const ref = fb.child('Engagements').child(payload).remove()
-    respond(uid,{domain:'Engagements', event:'delete', payload:payload})
+    respond(uid,{domain:'Engagements', event:'remove', payload:payload})
   })
 
 const commitments$ = authedQueue$
