@@ -3,7 +3,7 @@ var gulp = require('gulp'),
   plumber = require('gulp-plumber'),
   nodemon = require('gulp-nodemon');
 
-var SRC_PATH = 'src/**/*.js',
+var SRC_PATH = './src/**/*.js',
   DIST_PATH = 'dist';
 
 gulp.task('default',['serve']);
