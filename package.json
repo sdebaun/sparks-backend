@@ -33,6 +33,8 @@
     "eslint-plugin-no-class": "^0.1.0"
   },
   "dependencies": {
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-stage-0": "^6.5.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-nodemon": "^2.0.6",
