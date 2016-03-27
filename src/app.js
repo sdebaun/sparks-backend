@@ -32,6 +32,23 @@ const createProject$ = projects$
     respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
   })
 
+// needs to update .project child of every team with matching .projectKey
+const updateProject$ = projects$
+  .filter(({action}) => action == 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update Project', key, values)
+    const ref = fb.child('Projects').child(key).update(values)
+    respond(uid,{domain:'Projects', event:'update', payload: key})
+  })
+
+const removeProject$ = projects$
+  .filter(({action}) => action == 'remove')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('remove Projects',payload)
+    const ref = fb.child('Projects').child(payload).remove()
+    respond(uid,{domain:'Projects', event:'remove', payload:payload})
+  })
+
 const projectImages$ = authedQueue$
   .filter(({domain}) => domain == 'ProjectImages')
 
