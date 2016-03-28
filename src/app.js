@@ -24,6 +24,14 @@ const log = label => msg => console.log(label,msg)
 const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to ', cfg.FIREBASE_HOST)
 
+fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), (err,auth) => {
+  if (err) {
+    console.log('FB auth err:',err); process.exit()
+  } else {
+    console.log('FB authed successfully')
+  }
+})
+
 const {queue$, respond} = makeQueue(fb.child('!queue'))
 
 const once = makeOnce(fb)
