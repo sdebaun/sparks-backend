@@ -2,17 +2,46 @@ import Firebase from 'firebase'
 import {Observable} from 'rx'
 import {makeQueue, makeOnce} from './firebase-streams'
 
+const requiredVars = [
+  'PORT',
+  'FIREBASE_HOST',
+  'FIREBASE_TOKEN',
+]
+
+const cfg = {}
+
+requiredVars.forEach(v => {
+  if (process.env[v]) {
+    cfg[v] = process.env[v].trim()
+  } else {
+    console.log('Must specify ' + v)
+    process.exit()
+  }
+})
+
 const log = label => msg => console.log(label,msg)
 
-const fb = new Firebase('http://sparks-development.firebaseio.com')
+const fb = new Firebase(cfg.FIREBASE_HOST)
+console.log('Connected firebase to ', cfg.FIREBASE_HOST)
+
+fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), (err,auth) => {
+  if (err) {
+    console.log('FB auth err:',err); process.exit()
+  } else {
+    console.log('FB authed successfully')
+  }
+})
 
 const {queue$, respond} = makeQueue(fb.child('!queue'))
 
 const once = makeOnce(fb)
 
-const profileKey$ = queue$.flatMapLatest(({uid}) => once('Users',uid))
+const profileKey$ = queue$
+  .flatMapLatest(({uid}) => once('Users',uid))
 
-const profile$ = profileKey$.flatMapLatest(key => key && once('Profiles',key) || Observable.just(null))
+const profile$ = profileKey$
+  .flatMapLatest(key => key && once('Profiles',key) ||
+  Observable.just(null))
 
 const authedQueue$ = queue$
   .zip(profileKey$, profile$)
@@ -22,14 +51,14 @@ const authedQueue$ = queue$
 // authedQueue$.subscribe(x => console.log('authed:',x))
 
 const projects$ = authedQueue$
-  .filter(({domain}) => domain == 'Projects')
+  .filter(({domain}) => domain === 'Projects')
 
 const createProject$ = projects$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('new project',payload)
-    const ref = fb.child('Projects').push({...payload,ownerProfileKey:profileKey})
-    respond(uid,{domain:'Projects', event:'create', payload:ref.key()})
+    const ref = fb.child('Projects').push({...payload,ownerProfileKey: profileKey})
+    respond(uid,{domain: 'Projects', event: 'create', payload: ref.key()})
   })
 
 // needs to update .project child of every team with matching .projectKey

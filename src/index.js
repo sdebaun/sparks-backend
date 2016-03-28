@@ -1,15 +1,31 @@
 import express from 'express'
 
-require('./app.js') // the actual stuffs
+const requiredVars = [
+  'PORT',
+  'FIREBASE_HOST',
+  'FIREBASE_TOKEN',
+]
 
-const PORT = process.env.PORT || 3000
+const cfg = {}
+
+requiredVars.forEach(v => {
+  if (process.env[v]) {
+    cfg[v] = process.env[v]
+  } else {
+    console.log('Must specify ' + v)
+    process.exit()
+  }
+})
+
+cfg.PORT = cfg.PORT || 3000
+
+require('./app.js') // the actual stuffs
 
 const app = express()
 
 app.get('/', (req,res) => res.send('Hello World!'))
 
-app.listen(PORT, () => console.log('Listening on ',PORT))
-
+app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
 
 // import Firebase from 'firebase'
 // import {Observable} from 'rx'
