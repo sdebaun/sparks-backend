@@ -234,6 +234,14 @@ const deleteEngagement$ = engagements$
     respond(uid,{domain:'Engagements', event:'remove', payload:payload})
   })
 
+const updateEngagement$ = engagements$
+  .filter(({action}) => action == 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update Engagement', key, values)
+    const ref = fb.child('Engagements').child(key).update(values)
+    respond(uid,{domain:'Engagements', event:'update', payload: key})
+  })
+
 const commitments$ = authedQueue$
   .filter(({domain}) => domain == 'Commitments')
 
@@ -252,6 +260,15 @@ const removeCommitment$ = commitments$
     const ref = fb.child('Commitments').child(payload).remove()
     respond(uid,{domain:'Commitments', event:'remove', payload:payload})
   })
+
+const updateCommitment$ = commitments$
+  .filter(({action}) => action == 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update Commitment', key, values)
+    const ref = fb.child('Commitments').child(key).update(values)
+    respond(uid,{domain:'Commitments', event:'update', payload: key})
+  })
+
 
 
   // .subscribe(({uid, payload: {key, values}}) => {
