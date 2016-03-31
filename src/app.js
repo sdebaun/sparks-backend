@@ -172,10 +172,14 @@ const updateProfile$ = profiles$
     const ref = fb.child('Profiles').child(key).update(values)
     once('Engagements', {orderByChild: 'profileKey', equalTo: key})
       .subscribe(e => {
-        console.log('updating engagements', Object.keys(e).length)
-        Object.keys(e).forEach(eKey =>
-          fb.child('Engagements').child(eKey).child('profile').update(values)
-        )
+        if (e) {
+          console.log('updating engagements', Object.keys(e).length)
+          Object.keys(e).forEach(eKey =>
+            fb.child('Engagements').child(eKey).child('profile').update(values)
+          )
+        } else {
+          console.log('no engagements to update')
+        }
         respond(uid,{domain: 'Profiles', event: 'update', payload: key})
       })
   })
@@ -201,11 +205,15 @@ const updateOpp$ = opps$
     const ref = fb.child('Opps').child(key).update(values)
     once('Engagements', {orderByChild: 'oppKey', equalTo: key})
       .subscribe(e => {
-        console.log('updating engagements', Object.keys(e).length)
-        Object.keys(e).forEach(eKey =>
-          fb.child('Engagements').child(eKey).child('opp').update(values)
-        )
-        respond(uid,{domain:'Opps', event:'update', payload: key})
+        if (e) {
+          console.log('updating engagements', Object.keys(e).length)
+          Object.keys(e).forEach(eKey =>
+            fb.child('Engagements').child(eKey).child('opp').update(values)
+          )
+        } else {
+          console.log('no engagements to update')
+        }
+        respond(uid,{domain: 'Opps', event: 'update', payload: key})
       })
   })
 
