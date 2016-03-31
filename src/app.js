@@ -184,7 +184,14 @@ const updateOpp$ = opps$
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update opp', key, values)
     const ref = fb.child('Opps').child(key).update(values)
-    respond(uid,{domain:'Opps', event:'update', payload: key})
+    once('Engagements', {orderByChild: 'oppKey', equalTo: key})
+      .subscribe(e => {
+        console.log('updating engagements', Object.keys(e).length)
+        Object.keys(e).forEach(eKey =>
+          fb.child('Engagements').child(eKey).child('opp').update(values)
+        )
+        respond(uid,{domain:'Opps', event:'update', payload: key})
+      })
   })
 
 const fulfillers$ = authedQueue$
