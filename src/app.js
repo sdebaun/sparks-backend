@@ -165,6 +165,21 @@ const createProfile$ = profiles$
     respond(uid,{domain:'Profiles', event:'create', payload:ref.key()})
   })
 
+const updateProfile$ = profiles$
+  .filter(({action}) => action === 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update profiles', key, values)
+    const ref = fb.child('Profiles').child(key).update(values)
+    once('Engagements', {orderByChild: 'profileKey', equalTo: key})
+      .subscribe(e => {
+        console.log('updating engagements', Object.keys(e).length)
+        Object.keys(e).forEach(eKey =>
+          fb.child('Engagements').child(eKey).child('profile').update(values)
+        )
+        respond(uid,{domain: 'Profiles', event: 'update', payload: key})
+      })
+  })
+
 const opps$ = authedQueue$
   .filter(({domain}) => domain == 'Opps')
 
