@@ -299,7 +299,41 @@ const updateCommitment$ = commitments$
     respond(uid,{domain:'Commitments', event:'update', payload: key})
   })
 
+const memberships$ = authedQueue$
+  .filter(({domain}) => domain === 'Memberships')
 
+const createMemberships$ = memberships$
+  .filter(({action}) => action === 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    once('Opps', payload.oppKey).subscribe(opp => {
+      payload.opp = opp
+      console.log('create Membership',payload)
+      const ref = fb.child('Memberships').push({
+        ...payload,
+        authorProfileKey: profileKey,
+        isApplied: true,
+        isAccepted: false,
+        isConfirmed: false,
+      })
+      respond(uid,{domain: 'Memberships', event: 'create', payload: ref.key()})
+    })
+  })
+
+const deleteMemberships$ = memberships$
+  .filter(({action}) => action === 'remove')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete Memberships',payload)
+    const ref = fb.child('Memberships').child(payload).remove()
+    respond(uid,{domain: 'Memberships', event: 'remove', payload})
+  })
+
+const updateMemberships$ = memberships$
+  .filter(({action}) => action === 'update')
+  .subscribe(({uid,payload: {key, values}}) => {
+    console.log('update Memberships', key, values)
+    const ref = fb.child('Memberships').child(key).update(values)
+    respond(uid,{domain: 'Memberships', event: 'update', payload: key})
+  })
 
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
