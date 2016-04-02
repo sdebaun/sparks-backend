@@ -1,0 +1,48 @@
+{
+  "name": "sparks-backend",
+  "version": "1.0.0",
+  "description": "sparks backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "postinstall": "gulp build",
+    "build": "gulp build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdebaun/sparks-backend.git"
+  },
+  "author": "'sdebaun' <'sdebaun74@gmail.com'>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sdebaun/sparks-backend/issues"
+  },
+  "homepage": "https://github.com/sdebaun/sparks-backend#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "babel-eslint": "^5.0.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-nodemon": "^2.0.6",
+    "gulp-plumber": "^1.1.0",
+    "eslint": "^1.10.3",
+    "eslint-config-cycle": "^3.2.0",
+    "eslint-loader": "^1.3.0",
+    "eslint-plugin-cycle": "^1.0.2",
+    "eslint-plugin-no-class": "^0.1.0"
+  },
+  "dependencies": {
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "express": "^4.13.4",
+    "firebase": "^2.4.1",
+    "firebase-queue": "^1.2.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-nodemon": "^2.0.6",
+    "gulp-plumber": "^1.1.0",
+    "rx": "^4.0.8"
+  }
+}
