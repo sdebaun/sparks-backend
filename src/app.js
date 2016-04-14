@@ -299,7 +299,16 @@ const updateCommitment$ = commitments$
     respond(uid,{domain:'Commitments', event:'update', payload: key})
   })
 
+const shifts$ = authedQueue$
+  .filter(({domain}) => domain == 'Shifts')
 
+const createShift$ = shifts$
+  .filter(({action}) => action == 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('new Shift',payload)
+    const ref = fb.child('Shifts').push({...payload})
+    respond(uid,{domain:'Shifts', event:'create', payload: ref.key()})
+  })
 
   // .subscribe(({uid, payload: {key, values}}) => {
   //   const domain = 'ProjectImages'
