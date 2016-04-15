@@ -77,17 +77,16 @@ const createAssignments$ = assignments$
   .filter(a => a.action === 'create')
   .subscribe(({uid, profileKey, payload}) => {
     console.log('creating assignment')
-    const ref = fb.child('Assignments')
-      .push({...payload, ownerProfileKey: profileKey})
+    const ref = fb.child('Assignments').push({...payload, profileKey})
     respond(uid, {domain: 'Assignments', event: 'create', payload: ref.key()})
   })
 
-const updateAssignments$ = assignments$
-  .filter(a => a.action === 'update')
-  .subscribe(({uid, payload: {key, values}}) => {
+const removeAssignments$ = assignments$
+  .filter(a => a.action === 'remove')
+  .subscribe(({uid, payload}) => {
     console.log('updating assignment')
-    fb.child('Assignments').child(key).update(values)
-    respond(uid, {domain: 'Assignments', event: 'update', payload: key})
+    fb.child('Assignments').child(payload).remove()
+    respond(uid, {domain: 'Assignments', event: 'remove', payload})
   })
 
 const projects$ = authedQueue$
