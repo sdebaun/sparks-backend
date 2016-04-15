@@ -70,6 +70,26 @@ const updateShifts$ = shifts$
     respond(uid, {domain: 'Shifts', event: 'update', payload: key})
   })
 
+const assignments$ = authedQueue$
+  .filter(a => a.domain === 'Assignments')
+
+const createAssignments$ = assignments$
+  .filter(a => a.action === 'create')
+  .subscribe(({uid, profileKey, payload}) => {
+    console.log('creating assignment')
+    const ref = fb.child('Assignments')
+      .push({...payload, ownerProfileKey: profileKey})
+    respond(uid, {domain: 'Assignments', event: 'create', payload: ref.key()})
+  })
+
+const updateAssignments$ = assignments$
+  .filter(a => a.action === 'update')
+  .subscribe(({uid, payload: {key, values}}) => {
+    console.log('updating assignment')
+    fb.child('Assignments').child(key).update(values)
+    respond(uid, {domain: 'Assignments', event: 'update', payload: key})
+  })
+
 const projects$ = authedQueue$
   .filter(({domain}) => domain === 'Projects')
 
