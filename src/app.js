@@ -70,6 +70,14 @@ const updateShifts$ = shifts$
     respond(uid, {domain: 'Shifts', event: 'update', payload: key})
   })
 
+const removeShift$ = shifts$
+  .filter(({action}) => action === 'remove')
+  .subscribe(({uid, payload}) => {
+    console.log('remove shift',payload)
+    fb.child('Shifts').child(payload).remove()
+    respond(uid,{domain: 'Shifts', event: 'remove', payload: payload})
+  })
+
 const projects$ = authedQueue$
   .filter(({domain}) => domain === 'Projects')
 
