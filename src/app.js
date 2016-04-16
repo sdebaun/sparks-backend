@@ -50,6 +50,34 @@ const authedQueue$ = queue$
 
 // authedQueue$.subscribe(x => console.log('authed:',x))
 
+const shifts$ = authedQueue$
+  .filter(a => a.domain === 'Shifts')
+
+const createShifts$  = shifts$
+  .filter(a => a.action === 'create')
+  .subscribe(({uid, profileKey, payload}) => {
+    console.log('new shift')
+    const ref = fb.child('Shifts')
+      .push({...payload, ownerProfileKey: profileKey})
+    respond(uid, {domain: 'Shifts', event: 'create', payload: ref.key()})
+  })
+
+const updateShifts$ = shifts$
+  .filter(a => a.action === 'update')
+  .subscribe(({uid, profileKey, payload: {key, values}}) => {
+    console.log('updating shift', key, values)
+    fb.child('Shifts').child(key).update(values)
+    respond(uid, {domain: 'Shifts', event: 'update', payload: key})
+  })
+
+const removeShift$ = shifts$
+  .filter(({action}) => action === 'remove')
+  .subscribe(({uid, payload}) => {
+    console.log('remove shift',payload)
+    fb.child('Shifts').child(payload).remove()
+    respond(uid,{domain: 'Shifts', event: 'remove', payload: payload})
+  })
+
 const projects$ = authedQueue$
   .filter(({domain}) => domain === 'Projects')
 
