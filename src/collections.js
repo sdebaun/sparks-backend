@@ -1,5 +1,5 @@
 const objToRows = obj =>
-  Object.keys(obj).map(k => ({$key: k, ...obj[k]}))
+  obj && Object.keys(obj).map(k => ({$key: k, ...obj[k]})) || []
 
 const byChildKey = root => (field, key) => {
   console.log('Looking up',field,'of',key)
@@ -9,7 +9,7 @@ const byChildKey = root => (field, key) => {
 
 const firstByChildKey = root => (field, key) =>
   byChildKey(root)(field,key)
-  .then(rows => rows[0])
+  .then(rows => rows.length > 0 && rows[0])
 
 // const byChildKey = root => (field, key) =>
 //   root.orderByChild(field).equalTo(key).once('value')

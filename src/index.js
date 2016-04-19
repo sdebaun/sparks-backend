@@ -24,6 +24,8 @@ const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to', cfg.FIREBASE_HOST)
 
 const remote = makeCollections(fb, [
+  'Commitments',
+  'Engagements',
   'Fulfillers',
   'Opps',
   'Organizers',
@@ -35,9 +37,13 @@ const remote = makeCollections(fb, [
   'TeamImages',
 ])
 
+remote.Users = {
+  set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
+}
+
 console.log('Authenticating...')
 
-fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), (err,auth) => {
+fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), err => {
   if (err) {
     console.log('FB Auth err:',err); process.exit()
   } else {

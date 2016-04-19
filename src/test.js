@@ -94,7 +94,7 @@ q.push(PROFILES_CREATE)
 //   fb.child('!queue/tasks').push(PROJECTS_CREATE)
 // )
 
-.then(() => q.push(PROJECTS_UPDATE))
+// .then(() => q.push(PROJECTS_UPDATE))
 .then(() => q.push(FULFILLERS_CREATE))
 
 .then(() => process.exit())

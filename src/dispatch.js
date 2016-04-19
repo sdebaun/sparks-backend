@@ -2,10 +2,14 @@ import FirebaseQueue from 'firebase-queue'
 
 const log = (...m) => console.log(...m)
 
+const buildResponse = (domain, event, payload) => ({
+  domain, event, payload: payload || false,
+})
+
 export const startDispatch = (ref, remote, tasks) => {
-  const respond = (uid, result) => {
-    log('responding with', result || false)
-    ref.child('responses').child('uid').push(result || false)
+  const respond = (uid, response) => {
+    log('responding with', response)
+    ref.child('responses').child(uid).push(response)
   }
 
   const getHandler = (dom, act) =>
@@ -16,10 +20,11 @@ export const startDispatch = (ref, remote, tasks) => {
     })
 
   const handle = ({domain, action, uid, payload}, progress, resolve) => {
+    console.log('handling',domain,action,uid,payload)
     getHandler(domain, action, tasks)
     .then(handler => handler(payload, uid, remote))
-    .then(result => respond(uid, result))
-    .catch(err => log('queue error', err))
+    .then(result => respond(uid, buildResponse(domain, action, result)))
+    .catch(err => log('queue error', err, domain, action, uid, payload))
     .then(resolve)
   }
 

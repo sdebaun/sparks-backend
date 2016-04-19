@@ -6,14 +6,14 @@ const getTeamAndProject = (teamKey, {Teams, Projects}) =>
   )
 
 const create = (values, uid, {Profiles, Teams, Projects, Shifts}) =>
-  Profiles.by('uid', uid)
+  Profiles.first('uid', uid)
   .then(user =>
     getTeamAndProject(values.teamKey, {Teams, Projects}).then(r => [user, ...r])
   )
   .then(([user, team, project]) =>
-    isAdmin(user) ||
+    (isAdmin(user) ||
     isUser(user, team.ownerProfileKey) ||
-    isUser(user, project.ownerProfileKey) &&
+    isUser(user, project.ownerProfileKey)) &&
     Shifts.push({...values,
       ownerProfileKey: user.$key,
     }).key()
@@ -21,31 +21,31 @@ const create = (values, uid, {Profiles, Teams, Projects, Shifts}) =>
 
 const remove = (key, uid, {Profiles, Teams, Projects, Shifts}) =>
   Promise.all([
-    Profiles.by('uid', uid),
+    Profiles.first('uid', uid),
     Shifts.get(key),
   ])
   .then(([user, shift]) =>
     getTeamAndProject(shift.teamKey, {Teams, Projects}).then(r => [user, ...r])
   )
   .then(([user, team, project]) =>
-    isUser(user,team.ownerProfileKey) ||
-    isUser(user,project.ownerProfileKey) ||
-    isAdmin(user) &&
+    (isUser(user,team.ownerProfileKey) ||
+         isUser(user,project.ownerProfileKey) ||
+         isAdmin(user)) &&
       Shifts.child(key).remove() && key
   )
 
 const update = ({key, values}, uid, {Profiles, Teams, Projects, Shifts}) =>
   Promise.all([
-    Profiles.by('uid', uid),
+    Profiles.first('uid', uid),
     Shifts.get(key),
   ])
   .then(([user, shift]) =>
-    [user, ...getTeamAndProject(shift.teamKey, {Teams, Projects})]
+    getTeamAndProject(shift.teamKey, {Teams, Projects}).then(r => [user, shift, ...r])
   )
   .then(([user, team, project]) =>
-    isUser(user,team.ownerProfileKey) ||
-    isUser(user,project.ownerProfileKey) ||
-    isAdmin(user) &&
+    (isUser(user,team.ownerProfileKey) ||
+         isUser(user,project.ownerProfileKey) ||
+         isAdmin(user)) &&
       Shifts.child(key).update(values) && key
   )
 

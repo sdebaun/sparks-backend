@@ -28,9 +28,9 @@ const remove = (key, uid, {Profiles, Teams, Projects}) =>
     Projects.get(team.projectKey).then(project => [user, team, project])
   )
   .then(([user, team, project]) =>
-    isUser(user,team.ownerProfileKey) ||
-    isUser(user,project.ownerProfileKey) ||
-    isAdmin(user) &&
+    (isUser(user,team.ownerProfileKey) ||
+         isUser(user,project.ownerProfileKey) ||
+         isAdmin(user)) &&
       Teams.child(key).remove() && key
   )
 
@@ -43,9 +43,9 @@ const update = ({key, values}, uid, {Profiles, Teams, Projects}) =>
     Projects.get(team.projectKey).then(project => [user, team, project])
   )
   .then(([user, team, project]) =>
-    isUser(user,team.ownerProfileKey) ||
-    isUser(user,project.ownerProfileKey) ||
-    isAdmin(user) &&
+    (isUser(user,team.ownerProfileKey) ||
+         isUser(user,project.ownerProfileKey) ||
+         isAdmin(user)) &&
       Teams.child(key).update(values) && key
   )
 
