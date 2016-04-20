@@ -1,11 +1,19 @@
 import {isAdmin, isUser} from './authorization'
 
-const create = (values, uid, {Profiles, Engagements, Projects}) =>
-  Engagements.push({...values,
-    isApplied: true,
-    isAccepted: false,
-    isConfirmed: false,      
-  }).then(ref => ref.key())
+const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
+  new Promise((resolve) =>
+    gateway.clientToken.generate({}, (err,response) =>
+      resolve(response.clientToken)
+    )
+  )
+  .then(clientToken =>
+    Engagements.push({...values,
+      isApplied: true,
+      isAccepted: false,
+      isConfirmed: false,
+      paymentClientToken: clientToken,
+    }).then(ref => ref.key())
+  )
 
 const remove = (key, uid, {Profiles, Engagements, Projects}) =>
   Promise.all([

@@ -36,6 +36,7 @@
   "dependencies": {
     "babel-preset-es2015": "^6.5.0",
     "babel-preset-stage-0": "^6.5.0",
+    "braintree": "^1.37.1",
     "express": "^4.13.4",
     "firebase": "^2.4.1",
     "firebase-queue": "^1.2.1",
