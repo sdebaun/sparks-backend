@@ -264,6 +264,25 @@ const deleteFulfillers$ = fulfillers$
     respond(uid,{domain:'Fulfillers', event:'delete', payload:payload})
   })
 
+const assignments$ = authedQueue$
+  .filter(({domain}) => domain === 'Assignments')
+
+const createAssignments$ = assignments$
+  .filter(({action}) => action === 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create assignments',payload)
+    const ref = fb.child('Assignments').push({...payload, profileKey: profileKey})
+    respond(uid,{domain:'Assignments', event: 'create', payload: ref.key()})
+  })
+
+const removeAssignments$ = assignments$
+  .filter(({action}) => action === 'remove')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete Assignments',payload)
+    const ref = fb.child('Assignments').child(payload).remove()
+    respond(uid,{domain: 'Assignments', event:' delete', payload: payload})
+  })
+
 const engagements$ = authedQueue$
   .filter(({domain}) => domain == 'Engagements')
 
