@@ -30,7 +30,12 @@ const update = ({key, values}, uid, {Engagements}) =>
   Engagements.child(key).update(values).then(ref => key)
 
 const extractAmount = s =>
-  parseInt(s.replace(/[^0-9\.]/g, ''), 10)
+  parseInt(`${s}`.replace(/[^0-9\.]/g, ''), 10)
+
+const calcSparks = (pmt, dep) =>
+  (pmt + dep) * 0.035 + 1.0
+
+const calcNonref = (pmt, dep) => pmt + calcSparks(pmt, dep)
 
 const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
   Engagements.get(key).then(({oppKey}) =>
@@ -44,10 +49,13 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
     payment: extractAmount(c.payment && c.payment.amount || 0),
     deposit: extractAmount(c.deposit && c.deposit.amount || 0),
   }))
+  .then(c =>
+    calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
+  )
   // .then(amounts => console.log('payment amounts found', amounts))
-  .then(amounts =>
+  .then(payAmount =>
     gateway.createTransaction({
-      amount: amounts.payment,
+      amount: payAmount,
       paymentMethodNonce: values.paymentNonce,
     }, {
       submitForSettlement: true,
