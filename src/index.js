@@ -55,10 +55,10 @@ remote.Users = {
   set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
 }
 
-import braintree from 'braintree'
+import braintree from 'braintree-node'
 
-remote.gateway = braintree.connect({
-  environment: braintree.Environment.Sandbox,
+remote.gateway = braintree({
+  environment: 'Sandbox',
   merchantId: cfg.BT_MERCHANT_ID,
   publicKey: cfg.BT_PUBLIC_KEY,
   privateKey: cfg.BT_PRIVATE_KEY,

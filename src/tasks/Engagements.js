@@ -1,11 +1,12 @@
 import {isAdmin, isUser} from './authorization'
 
 const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
-  new Promise((resolve) =>
-    gateway.clientToken.generate({}, (err,response) =>
-      resolve(response.clientToken)
-    )
-  )
+  gateway.generateclientToken()
+  // new Promise((resolve) =>
+  //   gateway.clientToken.generate({}, (err,response) =>
+  //     resolve(response.clientToken)
+  //   )
+  // )
   .then(clientToken =>
     Engagements.push({...values,
       isApplied: true,
@@ -27,8 +28,14 @@ const remove = (key, uid, {Profiles, Engagements, Projects}) =>
 const update = ({key, values}, uid, {Engagements}) =>
   Engagements.child(key).update(values).then(ref => key)
 
+const pay = ({key, values}, uid, {Engagements}) => {
+
+  Engagements.child(key).update(values).then(ref => key)
+}
+
 export default {
   create,
   remove,
   update,
+  pay,
 }
