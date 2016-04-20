@@ -24,9 +24,11 @@ const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to', cfg.FIREBASE_HOST)
 
 const remote = makeCollections(fb, [
+  'Assignments',
   'Commitments',
   'Engagements',
   'Fulfillers',
+  'Memberships',
   'Opps',
   'Organizers',
   'Projects',
