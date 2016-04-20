@@ -1,6 +1,12 @@
+import express from 'express'
+
 const requiredVars = [
   'FIREBASE_HOST',
   'FIREBASE_TOKEN',
+  'BT_MERCHANT_ID',
+  'BT_PUBLIC_KEY',
+  'BT_PRIVATE_KEY',
+  'PORT',
 ]
 
 const cfg = {}
@@ -19,6 +25,12 @@ import {startDispatch} from './dispatch'
 import {makeCollections} from './collections'
 
 import tasks from './tasks'
+
+const app = express()
+
+app.get('/', (req,res) => res.send('Hello World!'))
+
+app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
 
 const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to', cfg.FIREBASE_HOST)
@@ -42,6 +54,15 @@ const remote = makeCollections(fb, [
 remote.Users = {
   set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
 }
+
+import braintree from 'braintree'
+
+remote.gateway = braintree.connect({
+  environment: braintree.Environment.Sandbox,
+  merchantId: cfg.BT_MERCHANT_ID,
+  publicKey: cfg.BT_PUBLIC_KEY,
+  privateKey: cfg.BT_PRIVATE_KEY,
+})
 
 console.log('Authenticating...')
 
