@@ -3,6 +3,7 @@ import express from 'express'
 const requiredVars = [
   'FIREBASE_HOST',
   'FIREBASE_TOKEN',
+  'BT_ENVIRONMENT',
   'BT_MERCHANT_ID',
   'BT_PUBLIC_KEY',
   'BT_PRIVATE_KEY',
@@ -58,7 +59,7 @@ remote.Users = {
 import braintree from 'braintree-node'
 
 remote.gateway = braintree({
-  environment: 'Sandbox',
+  environment: cfg.BT_ENVIRONMENT,
   merchantId: cfg.BT_MERCHANT_ID,
   publicKey: cfg.BT_PUBLIC_KEY,
   privateKey: cfg.BT_PRIVATE_KEY,
