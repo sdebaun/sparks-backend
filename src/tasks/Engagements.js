@@ -58,7 +58,7 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
       amount: payAmount,
       paymentMethodNonce: values.paymentNonce,
     }, {
-      verifyCard: true,
+      // verifyCard: true,
       submitForSettlement: true,
     })
     .tap(result => console.log('braintree result:', result.success, result.transaction.status))
