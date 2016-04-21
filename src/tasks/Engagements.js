@@ -58,9 +58,10 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
       amount: payAmount,
       paymentMethodNonce: values.paymentNonce,
     }, {
+      verifyCard: true,
       submitForSettlement: true,
     })
-    .tap(result => console.log('braintree result:', result))
+    .tap(result => console.log('braintree result:', result.success, result.transaction.status))
     .then(({success, transaction}) =>
       Engagements.child(key).update({
         transaction,
@@ -71,7 +72,14 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
       })
     )
     .then(() => key)
-    .catch(errorResult => console.log('BRAINTREE TRANSACTION ERROR', errorResult))
+    .catch(errorResult => {
+      console.log('BRAINTREE TRANSACTION ERROR', errorResult)
+      Engagements.child(key).update({
+        isPaid: false,
+        isConfirmed: false,
+        paymentError: errorResult.type,
+      })
+    })
   )
 
 export default {
