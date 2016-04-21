@@ -61,12 +61,13 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
       submitForSettlement: true,
     })
     .tap(result => console.log('braintree result:', result))
-    .then(({transaction}) =>
+    .then(({success, transaction}) =>
       Engagements.child(key).update({
         transaction,
         amountPaid: transaction.amount,
-        isPaid: true,
-        isConfirmed: true,
+        isPaid: success,
+        isConfirmed: success,
+        paymentError: success ? false : transaction.status,
       })
     )
     .then(() => key)
