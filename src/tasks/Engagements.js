@@ -20,8 +20,11 @@ const remove = (key, uid, {Profiles, Engagements, Projects}) =>
     Engagements.child(key).remove() && key
   )
 
-const update = ({key, values}, uid, {Engagements}) =>
-  Engagements.child(key).update(values).then(ref => key)
+const update = ({key, values}, uid, {Engagements}) => {
+  const isConfirmed = values.isAssigned && values.isPaid
+
+  Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
+}
 
 const extractAmount = s =>
   parseInt(`${s}`.replace(/[^0-9\.]/g, ''), 10)
