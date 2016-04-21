@@ -1,4 +1,6 @@
 import {isAdmin, isUser} from './authorization'
+// import Promise from 'prfun'
+require('prfun/smash')
 
 const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
   gateway.generateClientToken()
@@ -50,6 +52,7 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
     calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
   )
   // .then(amounts => console.log('payment amounts found', amounts))
+  .tap(c => console.log('payment amounts found', c))
   .then(payAmount =>
     gateway.createTransaction({
       amount: payAmount,
@@ -57,6 +60,7 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
     }, {
       submitForSettlement: true,
     })
+    .tap(result => console.log('braintree result:', result))
     .then(({transaction}) =>
       Engagements.child(key).update({
         transaction,
