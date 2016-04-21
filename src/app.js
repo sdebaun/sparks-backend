@@ -24,7 +24,7 @@ const log = label => msg => console.log(label,msg)
 const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to ', cfg.FIREBASE_HOST)
 
-fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), (err,auth) => {
+fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), (err, auth) => {
   if (err) {
     console.log('FB auth err:',err); process.exit()
   } else {
@@ -53,7 +53,7 @@ const authedQueue$ = queue$
 const shifts$ = authedQueue$
   .filter(a => a.domain === 'Shifts')
 
-const createShifts$  = shifts$
+const createShifts$ = shifts$
   .filter(a => a.action === 'create')
   .subscribe(({uid, profileKey, payload}) => {
     console.log('new shift')
@@ -262,6 +262,25 @@ const deleteFulfillers$ = fulfillers$
     console.log('delete fulfiller',payload)
     const ref = fb.child('Fulfillers').child(payload).remove()
     respond(uid,{domain:'Fulfillers', event:'delete', payload:payload})
+  })
+
+const assignments$ = authedQueue$
+  .filter(({domain}) => domain === 'Assignments')
+
+const createAssignments$ = assignments$
+  .filter(({action}) => action === 'create')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('create assignments',payload)
+    const ref = fb.child('Assignments').push({...payload, profileKey: profileKey})
+    respond(uid,{domain:'Assignments', event: 'create', payload: ref.key()})
+  })
+
+const removeAssignments$ = assignments$
+  .filter(({action}) => action === 'remove')
+  .subscribe(({uid,profile,profileKey,payload}) => {
+    console.log('delete Assignments',payload)
+    const ref = fb.child('Assignments').child(payload).remove()
+    respond(uid,{domain: 'Assignments', event:' delete', payload: payload})
   })
 
 const engagements$ = authedQueue$
