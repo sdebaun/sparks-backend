@@ -2,12 +2,6 @@ import {isAdmin, isUser} from './authorization'
 
 const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
   gateway.generateClientToken()
-  // .then(response => response.clientToken)
-  // new Promise((resolve) =>
-  //   gateway.clientToken.generate({}, (err,response) =>
-  //     resolve(response.clientToken)
-  //   )
-  // )
   .then(({clientToken}) =>
     Engagements.push({...values,
       isApplied: true,
