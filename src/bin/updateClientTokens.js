@@ -6,6 +6,7 @@ const requiredVars = [
   'BT_MERCHANT_ID',
   'BT_PUBLIC_KEY',
   'BT_PRIVATE_KEY',
+  'BT_ENVIRONMENT',
 ]
 
 const cfg = {}
@@ -32,7 +33,7 @@ fb.authWithCustomToken(cfg.FIREBASE_TOKEN, err => {
 import braintree from 'braintree-node'
 
 const gateway = braintree({
-  environment: 'Sandbox',
+  environment: cfg.BT_ENVIRONMENT,
   merchantId: cfg.BT_MERCHANT_ID,
   publicKey: cfg.BT_PUBLIC_KEY,
   privateKey: cfg.BT_PRIVATE_KEY,

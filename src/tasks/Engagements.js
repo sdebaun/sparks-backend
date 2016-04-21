@@ -66,6 +66,7 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
         transaction,
         amountPaid: transaction.amount,
         isPaid: true,
+        isConfirmed: true,
       })
     )
     .then(() => key)
