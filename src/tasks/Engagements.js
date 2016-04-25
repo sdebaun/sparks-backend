@@ -34,7 +34,7 @@ const extractAmount = s =>
 const calcSparks = (pmt, dep) =>
   (pmt + dep) * 0.035 + 1.0
 
-const calcNonref = (pmt, dep) => pmt + calcSparks(pmt, dep)
+const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
 const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
   Engagements.get(key).then(({oppKey}) =>
