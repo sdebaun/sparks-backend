@@ -1,6 +1,6 @@
 import {isAdmin, isUser} from './authorization'
 
-const updateCounts = (shiftKey, {Assignments, Shifts}) =>
+export const updateCounts = (shiftKey, {Assignments, Shifts}) =>
   Assignments.by('shiftKey', shiftKey)
     .then(assignments => { console.log('found',assignments.length); return assignments.length })
     .then(assigned => Shifts.child(shiftKey).update({assigned}))

@@ -1,5 +1,7 @@
 import {isAdmin, isUser} from './authorization'
 
+import {updateCounts} from './Assignments'
+
 const getTeamAndProject = (teamKey, {Teams, Projects}) =>
   Teams.get(teamKey).then(team =>
     Projects.get(team.projectKey).then(project => [team, project])
@@ -34,7 +36,7 @@ const remove = (key, uid, {Profiles, Teams, Projects, Shifts}) =>
       Shifts.child(key).remove() && key
   )
 
-const update = ({key, values}, uid, {Profiles, Teams, Projects, Shifts}) =>
+const update = ({key, values}, uid, {Profiles, Teams, Projects, Shifts, Assignments}) =>
   Promise.all([
     Profiles.first('uid', uid),
     Shifts.get(key),
@@ -48,6 +50,7 @@ const update = ({key, values}, uid, {Profiles, Teams, Projects, Shifts}) =>
          isAdmin(user)) &&
       Shifts.child(key).update(values) && key
   )
+  .then(() => updateCounts(key, {Assignments, Shifts}).then(() => key))
 
 export default {
   create,
