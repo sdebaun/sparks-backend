@@ -52,7 +52,7 @@ fb.child('Engagements').once('value')
   console.log(engagements.length, 'engagements count')
   return Promise.all(
     engagements
-      .filter(e => e.priority || e.isAccepted)
+      .filter(e => (e.priority || e.isAccepted) && !e.isConfirmed)
       .map(e =>
         gateway.generateClientToken()
         .then(({clientToken}) =>

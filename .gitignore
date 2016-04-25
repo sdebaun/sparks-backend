@@ -1,6 +1,8 @@
 # Local
 *.local.*
 
+*.csv
+
 # Logs
 logs
 *.log
