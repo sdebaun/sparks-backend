@@ -39,13 +39,13 @@ fb.child('Engagements').once('value')
   console.log(engagements.length, 'engagements count')
   return Promise.all(
     engagements
-      .filter(e => e.priority || e.isAccepted)
+      .filter(e => (e.priority || e.isAccepted) && !e.isConfirmed)
       .map(e => getProfile(e.profileKey))
   )
 })
 .then(profiles => {
   console.log(profiles.length, 'profile count')
-  return profiles.forEach(p => console.log(`"${p.fullName}","${p.email}","BMJ2016"`))
+  return profiles.forEach(p => console.log(`"${p.fullName}","${p.email}","${p.phone}","BMJ2016","NOTCONFIRMED"`))
   // return profiles.forEach(p => console.log(p))
 })
 .then(() => process.exit())
