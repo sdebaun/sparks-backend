@@ -16,7 +16,7 @@ requiredVars.forEach(v => {
   }
 })
 
-const project = process.argv[2] || null
+const PROJECT = process.argv[2] || null
 
 const fb = new Firebase(cfg.FIREBASE_HOST)
 
@@ -58,6 +58,18 @@ const getProfile = engagement =>
     .then(s => s.val())
     .then(val => [val, getStatusCode(engagement)])
 
+const getProject = e =>
+  fb.child('Opps')
+    .child(e.oppKey)
+    .once('value')
+    .then(s => s.val())
+    .then(x =>
+      fb.child('Projects')
+        .child(x.projectKey)
+        .once('value')
+        .then(s => [s.val(), e])
+    )
+
 const objToRows = obj =>
   obj && Object.keys(obj).map(k => ({$key: k, ...obj[k]})) || []
 
@@ -71,15 +83,20 @@ fb.child('Engagements').once('value')
 .then(snap => snap.val())
 .then(objToRows)
 .then(engagements => {
+  return Promise.all(engagements.map(getProject))
+})
+.then(projects => {
+  return projects
+    .filter(([project]) => {
+      if (PROJECT === null || project.name === PROJECT) { return true }
+      return false
+    })
+    .map(x => x[1]) // map back to just engagements
+})
+.then(engagements => {
   console.log(engagements.length, 'engagements count')
   return Promise.all(
     engagements
-      .filter(e => {
-        if (project === null) {
-          return true
-        }
-        return e && e.opp && e.opp.project && e.opp.project.name === project
-      })
       .filter(e => Boolean(e.profileKey))
       .map(e => getProfile(e))
   )
