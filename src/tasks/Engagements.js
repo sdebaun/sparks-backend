@@ -13,19 +13,43 @@ const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
     }).then(ref => ref.key())
   )
 
-const remove = (key, uid, {Profiles, Engagements, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Engagements.get(key),
-  ])
-  .then(([user, fulfiller]) =>
-    Engagements.child(key).remove() && key
+import {updateCounts} from './Assignments'
+
+const remove = (key, uid, {Assignments, Engagements, Shifts}) =>
+  Assignments.by('engagementKey', key)
+  .then(engs => Promise.all(engs.map(({$key}) => Assignments.get($key))))
+  .then(assigns =>
+    Promise.all(assigns.map(({$key}) => Assignments.child($key).remove()))
+    .then(Promise.all(assigns.map(({shiftKey}) =>
+      updateCounts(shiftKey, {Assignments, Shifts})
+    )))
   )
+  .then(() => Engagements.child(key).remove())
+  .then(() => key)
+
+  // Promise.all([
+  //   Profiles.first('uid', uid),
+  //   Engagements.get(key),
+  // ])
+  // .then(([user, fulfiller]) =>
+  //   Assignments.by('engagementKey', key)
+  //     .
+  //   Promise.all([
+  //     Assignments.
+      
+  //   ])
+  //   .then(() => Engagements.child(key).remove())
+  // )
 
 const update = ({key, values}, uid, {Engagements}) => {
-  const isConfirmed = !!(values.isAssigned && values.isPaid)
+  // const isConfirmed = !!(values.isAssigned && values.isPaid)
 
-  Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
+  // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
+  Engagements.child(key).update(values)
+    .then(() => Engagements.get(key))
+    .then(({isAssigned, isPaid}) => isAssigned && isPaid)
+    .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
+    .then(() => key)
 }
 
 const extractAmount = s =>
@@ -34,7 +58,7 @@ const extractAmount = s =>
 const calcSparks = (pmt, dep) =>
   (pmt + dep) * 0.035 + 1.0
 
-const calcNonref = (pmt, dep) => pmt + calcSparks(pmt, dep)
+const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
 const pay = ({key, values}, uid, {Engagements, Commitments, gateway}) =>
   Engagements.get(key).then(({oppKey}) =>
