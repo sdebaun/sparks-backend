@@ -23,9 +23,14 @@ const remove = (key, uid, {Profiles, Engagements, Projects}) =>
   )
 
 const update = ({key, values}, uid, {Engagements}) => {
-  const isConfirmed = !!(values.isAssigned && values.isPaid)
+  // const isConfirmed = !!(values.isAssigned && values.isPaid)
 
-  Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
+  // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
+  Engagements.child(key).update(values)
+    .then(() => Engagements.get(key))
+    .then(({isAssigned, isPaid}) => isAssigned && isPaid)
+    .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
+    .then(() => key)
 }
 
 const extractAmount = s =>
