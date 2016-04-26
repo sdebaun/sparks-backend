@@ -16,6 +16,8 @@ requiredVars.forEach(v => {
   }
 })
 
+const project = process.argv[2] || null
+
 const fb = new Firebase(cfg.FIREBASE_HOST)
 
 // fb.authWithCustomToken(cfg.FIREBASE_TOKEN, err => {
@@ -26,11 +28,44 @@ const fb = new Firebase(cfg.FIREBASE_HOST)
 //   }
 // })
 
-const getProfile = key =>
-  fb.child('Profiles').child(key).once('value').then(s => s.val())
+function getStatusCode(engagement) {
+  const {
+    isApplied = false,
+    isAccepted = false,
+    isConfirmed = false,
+    declined = false,
+  } = engagement
+
+  if (declined) {
+    return 'REJECTED'
+  }
+
+  if (isApplied) {
+    if (isAccepted) {
+      if (isConfirmed) {
+        return 'CONFIRMED'
+      }
+      return 'APPROVED'
+    }
+    return 'APPLIED'
+  }
+}
+
+const getProfile = engagement =>
+  fb.child('Profiles')
+    .child(engagement.profileKey)
+    .once('value')
+    .then(s => s.val())
+    .then(val => [val, getStatusCode(engagement)])
 
 const objToRows = obj =>
   obj && Object.keys(obj).map(k => ({$key: k, ...obj[k]})) || []
+
+function sortByName([a], [b]) {
+  if (a.fullName < b.fullName) { return -1 }
+  if (a.fullName > b.fullName) { return 1 }
+  return 0
+}
 
 fb.child('Engagements').once('value')
 .then(snap => snap.val())
@@ -39,13 +74,21 @@ fb.child('Engagements').once('value')
   console.log(engagements.length, 'engagements count')
   return Promise.all(
     engagements
-      .filter(e => (e.priority || e.isAccepted) && !e.isConfirmed)
-      .map(e => getProfile(e.profileKey))
+      .filter(e => {
+        if (project === null) {
+          return true
+        }
+        return e && e.opp && e.opp.project && e.opp.project.name === project
+      })
+      .filter(e => Boolean(e.profileKey))
+      .map(e => getProfile(e))
   )
 })
 .then(profiles => {
   console.log(profiles.length, 'profile count')
-  return profiles.forEach(p => console.log(`"${p.fullName}","${p.email}","${p.phone}","BMJ2016","NOTCONFIRMED"`))
+  return profiles
+    .sort(sortByName)
+    .forEach(([p, status]) => console.log(`"${p.fullName}", "${p.email}", "${p.phone}", "BMJ2016", "${status}"`)) // eslint-disable-line
   // return profiles.forEach(p => console.log(p))
 })
 .then(() => process.exit())
