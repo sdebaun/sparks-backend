@@ -7,7 +7,8 @@ export const updateCounts = (shiftKey, {Assignments, Shifts}) =>
 
 const create = (values, uid, {Profiles, Assignments, Shifts}) =>
   Profiles.first('uid', uid)
-  .then(profile => Assignments.push({...values, profileKey: profile.$key}))
+  // .then(profile => Assignments.push({...values, profileKey: profile.$key}))
+  .then(profile => Assignments.push(values))
   .then(ref =>
     updateCounts(values.shiftKey, {Assignments, Shifts})
     .then(() => ref.key())
