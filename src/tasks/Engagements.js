@@ -2,6 +2,8 @@ import {isAdmin, isUser} from './authorization'
 // import Promise from 'prfun'
 require('prfun/smash')
 
+const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
+
 const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
   gateway.generateClientToken()
   .then(({clientToken}) =>
@@ -11,6 +13,15 @@ const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
       isConfirmed: false,
       paymentClientToken: clientToken,
     }).then(ref => ref.key())
+      .then(key => {
+        sendgrid.send({
+          to: 'tlsteinberger167@gmail.com',
+          from: 'tsteinberger@sparks.network',
+          subject: `You've just created a new engagment!`,
+          text: `Congratulations`,
+        })
+        return key
+      })
   )
 
 import {updateCounts} from './Assignments'
@@ -36,7 +47,7 @@ const remove = (key, uid, {Assignments, Engagements, Shifts}) =>
   //     .
   //   Promise.all([
   //     Assignments.
-      
+
   //   ])
   //   .then(() => Engagements.child(key).remove())
   // )
