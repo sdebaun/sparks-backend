@@ -1,4 +1,4 @@
-import {isAdmin, isEAP, isUser} from './authorization'
+import {isAdmin, isUser} from './authorization'
 
 const set = ({key, values}, uid, {Profiles, Projects, ProjectImages}) =>
   Promise.all([
@@ -6,7 +6,7 @@ const set = ({key, values}, uid, {Profiles, Projects, ProjectImages}) =>
     Projects.get(key),
   ])
   .then(([profile,project]) =>
-    isUser(profile, project.ownerProfileKey) || isAdmin(profile) &&
+    isAdmin(profile) || isUser(profile, project.owernProfileKey) &&
       ProjectImages.child(key).set(values) && key
   )
 
