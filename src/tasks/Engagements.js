@@ -1,28 +1,58 @@
-import {isAdmin, isUser} from './authorization'
+/* eslint max-nested-callbacks: 0 */
+// import {isAdmin, isUser} from './authorization'
 // import Promise from 'prfun'
 require('prfun/smash')
 
 const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
+const DOMAIN = process.env['DOMAIN']
 
-const create = (values, uid, {gateway, Profiles, Engagements, Projects}) =>
-  gateway.generateClientToken()
-  .then(({clientToken}) =>
-    Engagements.push({...values,
-      isApplied: true,
-      isAccepted: false,
-      isConfirmed: false,
-      paymentClientToken: clientToken,
-    }).then(ref => ref.key())
-      .then(key => {
-        sendgrid.send({
-          to: 'tlsteinberger167@gmail.com',
-          from: 'tsteinberger@sparks.network',
-          subject: `You've just created a new engagment!`,
-          text: `Congratulations`,
-        })
-        return key
-      })
-  )
+const getVal = p => p.once('value').then(s => s.val())
+
+function sendCreatedEmail({user, project, opp, key}) {
+  const email = new sendgrid.Email()
+  email.addTo(user.email)
+  email.subject = `New engagment for ${project.name}!`
+  email.from = 'help@sparks.network'
+  email.html = ' '
+
+  email.addFilter('templates', 'enable', 1)
+  email.addFilter('templates', 'template_id',
+    '96e36ab7-43b0-4d45-8309-32c52530bd8a')
+
+  email.addSubstitution('-username-', user.fullName)
+  email.addSubstitution('-opp_name-', opp.name)
+  email.addSubstitution('-project_name-', project.name)
+  email.addSubstitution('-engagementurl-',
+    `${DOMAIN}/engaged/${key}/`)
+
+  sendgrid.send(email, (err, json) => {
+    if (err) { return console.error(err) }
+    console.log(json)
+  })
+}
+
+const create =
+  (values, uid, {gateway, Profiles, Engagements, Opps, Projects}) =>
+    gateway.generateClientToken()
+    .then(({clientToken}) =>
+      Engagements.push({...values,
+        isApplied: true,
+        isAccepted: false,
+        isConfirmed: false,
+        paymentClientToken: clientToken,
+      }).then(ref => ref.key())
+        .then(key =>
+          Promise.all([
+            Profiles.first('uid', uid),
+            getVal(Opps.child(values.oppKey)),
+          ])
+          .then(([user, opp]) =>
+            getVal(Projects.child(opp.projectKey))
+              .then(project => sendCreatedEmail({user, opp, project, key}))
+              .then(() => key)
+          )
+        )
+    )
 
 import {updateCounts} from './Assignments'
 
