@@ -6,9 +6,16 @@ require('prfun/smash')
 const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
 const DOMAIN = process.env['DOMAIN']
 
-const getVal = p => p.once('value').then(s => s.val())
+function getEmailInfo({key, oppKey, uid, Profiles, Opps, Projects}) {
+  return Promise.all([Profiles.first('uid', uid), Opps.get(oppKey)])
+    .then(([profile, opp]) =>
+      Projects.get(opp.projectKey)
+        .then(project => ({project, opp, user: profile, key}))
+    )
+}
 
 function sendCreatedEmail({user, project, opp, key}) {
+  console.log(arguments)
   const email = new sendgrid.Email()
   email.addTo(user.email)
   email.subject = `New engagment for ${project.name}!`
@@ -22,8 +29,29 @@ function sendCreatedEmail({user, project, opp, key}) {
   email.addSubstitution('-username-', user.fullName)
   email.addSubstitution('-opp_name-', opp.name)
   email.addSubstitution('-project_name-', project.name)
-  email.addSubstitution('-engagementurl-',
-    `${DOMAIN}/engaged/${key}/`)
+  email.addSubstitution('-engagementurl-', `${DOMAIN}/engaged/${key}/`)
+
+  sendgrid.send(email, (err, json) => {
+    if (err) { return console.error(err) }
+    console.log(json)
+  })
+}
+
+function sendAcceptedEmail({user, project, opp, key}) {
+  const email = new sendgrid.Email()
+  email.addTo(user.email)
+  email.subject = `Application accepted for ${project.name}!`
+  email.from = 'help@sparks.network'
+  email.html = ' '
+
+  email.addFilter('templates', 'enable', 1)
+  email.addFilter('templates', 'template_id',
+    'dec62dab-bf8e-4000-975a-0ef6b264dafe')
+
+  email.addSubstitution('-username-', user.fullName)
+  email.addSubstitution('-opp_name-', opp.name)
+  email.addSubstitution('-project_name-', project.name)
+  email.addSubstitution('-engagementurl-', `${DOMAIN}/engaged/${key}/`)
 
   sendgrid.send(email, (err, json) => {
     if (err) { return console.error(err) }
@@ -42,15 +70,9 @@ const create =
         paymentClientToken: clientToken,
       }).then(ref => ref.key())
         .then(key =>
-          Promise.all([
-            Profiles.first('uid', uid),
-            getVal(Opps.child(values.oppKey)),
-          ])
-          .then(([user, opp]) =>
-            getVal(Projects.child(opp.projectKey))
-              .then(project => sendCreatedEmail({user, opp, project, key}))
-              .then(() => key)
-          )
+          getEmailInfo({key, uid, oppKey: values.oppKey, Profiles, Opps, Projects}) // eslint-disable-line max-len
+          .then(sendCreatedEmail)
+          .then(() => key)
         )
     )
 
@@ -82,12 +104,20 @@ const remove = (key, uid, {Assignments, Engagements, Shifts}) =>
   //   .then(() => Engagements.child(key).remove())
   // )
 
-const update = ({key, values}, uid, {Engagements}) => {
+const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => { //eslint-disable-line max-len
   // const isConfirmed = !!(values.isAssigned && values.isPaid)
 
   // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
   Engagements.child(key).update(values)
     .then(() => Engagements.get(key))
+    .then(engagment => {
+      if (values.isAccepted) {
+        return getEmailInfo({key, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
+          .then(sendAcceptedEmail)
+          .then(() => engagment)
+      }
+      return engagment
+    })
     .then(({isAssigned, isPaid}) => isAssigned && isPaid)
     .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
     .then(() => key)
