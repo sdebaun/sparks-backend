@@ -1,7 +1,7 @@
 /* eslint max-nested-callbacks: 0 */
 // import {isAdmin, isUser} from './authorization'
 // import Promise from 'prfun'
-import moment from 'moment'
+// import moment from 'moment'
 
 require('prfun/smash')
 
@@ -40,7 +40,7 @@ function sendEngagmentEmail({user, project, opp, key, uid}, {templateId, subject
 
   return arguments[0]
 }
-
+/*
 function scheduleReminderEmail(info, Assignments, Shifts) {
   return console.log('info', info) || Assignments.by('profileKey', info.uid)
     .then(assignments => console.log(assignments) || assignments.filter(a => a.engagementKey === info.key)) // eslint-disable-line
@@ -63,7 +63,7 @@ function scheduleReminderEmail(info, Assignments, Shifts) {
         templateId: '2d01fe18-b230-4e92-b234-26e14b30cd30',
       })
     })
-}
+}*/
 
 const create =
   (values, uid, {gateway, Profiles, Engagements, Opps, Projects}) =>
@@ -143,7 +143,7 @@ const calcSparks = (pmt, dep) =>
 
 const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
-const pay = ({key, values}, uid, {Engagements, Commitments, gateway, Profiles, Opps, Assignments, Projects, Shifts}) => // eslint-disable-line max-len
+const pay = ({key, values}, uid, {Engagements, Commitments, gateway, Profiles, Opps, Projects}) => // eslint-disable-line max-len
   Engagements.get(key).then(({oppKey}) =>
     Commitments.by('oppKey', oppKey)
   )
@@ -194,11 +194,10 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway, Profiles, O
               subject: 'Your are confirmed for',
               templateId: 'b1180393-8841-4cf4-9bbd-4a8602a976ef',
             }))
-            .then(info => scheduleReminderEmail(info, Assignments, Shifts))
+            //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
             .then(() => key)
         )
     })
-    .then(() => key)
   )
 
 export default {
