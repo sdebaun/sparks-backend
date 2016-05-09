@@ -8,11 +8,11 @@ require('prfun/smash')
 const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
 const DOMAIN = process.env['DOMAIN']
 
-function getEmailInfo({key, oppKey, uid, Profiles, Opps, Projects}) {
-  return Promise.all([Profiles.first('uid', uid), Opps.get(oppKey)])
+function getEmailInfo({key, oppKey, profileKey, uid, Profiles, Opps, Projects}) { //eslint-disable-line max-len
+  return Promise.all([Profiles.get(profileKey), Opps.get(oppKey)])
     .then(([profile, opp]) =>
       Projects.get(opp.projectKey)
-        .then(project => ({project, opp, user: profile, key, uid}))
+        .then(project => ({project, opp, user: profile, key, uid, profileKey}))
     )
 }
 
@@ -43,7 +43,9 @@ function sendEngagmentEmail({user, project, opp, key, uid}, {templateId, subject
 /*
 function scheduleReminderEmail(info, Assignments, Shifts) {
   return console.log('info', info) || Assignments.by('profileKey', info.uid)
-    .then(assignments => console.log(assignments) || assignments.filter(a => a.engagementKey === info.key)) // eslint-disable-line
+    .then(assignments => console.log(assignments) ||
+      assignments.filter(a => a.engagementKey === info.key)
+    )
     .then(assignments => assignments[0])
     .then(assignment => Shifts.get(assignment.shiftKey))
     .then(shift => {
@@ -76,7 +78,7 @@ const create =
         paymentClientToken: clientToken,
       }).then(ref => ref.key())
         .then(key =>
-          getEmailInfo({key, uid, oppKey: values.oppKey, Profiles, Opps, Projects}) // eslint-disable-line max-len
+          getEmailInfo({key, profileKey: values.profileKey, uid, oppKey: values.oppKey, Profiles, Opps, Projects}) // eslint-disable-line max-len
           .then(info => sendEngagmentEmail(info, {
             templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
             subject: 'New Engagement for',
@@ -121,7 +123,7 @@ const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => 
     .then(() => Engagements.get(key))
     .then(engagment => {
       if (values.isAccepted) {
-        return getEmailInfo({key, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
+        return getEmailInfo({key, profileKey: engagment.profileKey, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
           .then(info => sendEngagmentEmail(info, {
             templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
             subject: 'Application accepted for',
@@ -189,7 +191,7 @@ const pay = ({key, values}, uid, {Engagements, Commitments, gateway, Profiles, O
     .then(() => {
       return Engagements.get(key)
         .then(engagement =>
-          getEmailInfo({key, oppKey: engagement.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
+          getEmailInfo({key, profileKey: engagement.profileKey, oppKey: engagement.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
             .then(info => sendEngagmentEmail(info, {
               subject: 'Your are confirmed for',
               templateId: 'b1180393-8841-4cf4-9bbd-4a8602a976ef',
