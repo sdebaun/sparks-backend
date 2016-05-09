@@ -18,6 +18,13 @@ requiredVars.forEach(v => {
 
 const PROJECT = process.argv[2] || null
 
+const PROJECT_NAMES = {
+  'Northern Nights': 'NN2016',
+  'Disc Jam': 'DISCJAM2016',
+  'Wild Woods': 'WILDWOODS2016',
+  'Cosmic Alignment': 'Cosmic2016',
+}
+
 const fb = new Firebase(cfg.FIREBASE_HOST)
 
 // fb.authWithCustomToken(cfg.FIREBASE_TOKEN, err => {
@@ -94,7 +101,7 @@ fb.child('Engagements').once('value')
     .map(x => x[1]) // map back to just engagements
 })
 .then(engagements => {
-  console.log(engagements.length, 'engagements count')
+  // console.log(engagements.length, 'engagements count')
   return Promise.all(
     engagements
       .filter(e => Boolean(e.profileKey))
@@ -102,10 +109,14 @@ fb.child('Engagements').once('value')
   )
 })
 .then(profiles => {
-  console.log(profiles.length, 'profile count')
+  // console.log(profiles.length, 'profile count')
   return profiles
     .sort(sortByName)
-    .forEach(([p, status]) => console.log(`"${p.fullName}", "${p.email}", "${p.phone}", "BMJ2016", "${status}"`)) // eslint-disable-line
+    .map(([p, status]) => `"${p.fullName}", "${p.email}", "${p.phone}", ${PROJECT_NAMES[PROJECT]}, "${status}"`) // eslint-disable-line
+    .filter((item, pos, ary) => {
+      return !pos || item !== ary[pos - 1]
+    })
+    .forEach(x => console.log(x))
   // return profiles.forEach(p => console.log(p))
 })
 .then(() => process.exit())

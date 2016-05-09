@@ -7,6 +7,8 @@ const requiredVars = [
   'BT_MERCHANT_ID',
   'BT_PUBLIC_KEY',
   'BT_PRIVATE_KEY',
+  'SENDGRID_KEY',
+  'DOMAIN',
   'PORT',
 ]
 
