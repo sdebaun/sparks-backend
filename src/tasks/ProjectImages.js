@@ -6,7 +6,7 @@ const set = ({key, values}, uid, {Profiles, Projects, ProjectImages}) =>
     Projects.get(key),
   ])
   .then(([profile,project]) =>
-    isAdmin(profile) || isUser(profile, project.owernProfileKey) &&
+    isAdmin(profile) || isUser(profile, project.ownerProfileKey) &&
       ProjectImages.child(key).set(values) && key
   )
 
