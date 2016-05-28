@@ -1,8 +1,8 @@
 import express from 'express'
+import bodyParser from 'body-parser'
+import seneca from './seneca'
 
 const requiredVars = [
-  'FIREBASE_HOST',
-  'FIREBASE_TOKEN',
   'BT_ENVIRONMENT',
   'BT_MERCHANT_ID',
   'BT_PUBLIC_KEY',
@@ -23,22 +23,32 @@ requiredVars.forEach(v => {
   }
 })
 
-import Firebase from 'firebase'
+import firebase from 'firebase'
 import {startDispatch} from './dispatch'
 import {makeCollections} from './collections'
 
 import tasks from './tasks'
 
 const app = express()
+app.use(bodyParser.json())
 
+//app.use(seneca().export('web'))
 app.get('/', (req,res) => res.send('Hello World!'))
 
-app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
+app.listen(cfg.PORT, () => console.log('Listening on ', cfg.PORT))
 
-const fb = new Firebase(cfg.FIREBASE_HOST)
+const fbConfig = {
+  databaseURL: 'https://sparks-jeremy-ccd3d.firebaseio.com',
+  serviceAccount: 'sparks-jeremy-14deca79722c.json',
+}
+firebase.initializeApp(fbConfig)
+const ref = firebase.database().ref()
+const queueRef = ref.child('!queue')
+const usersRef = ref.child('Users')
+
 console.log('Connected firebase to', cfg.FIREBASE_HOST)
 
-const remote = makeCollections(fb, [
+const remote = makeCollections(ref, [
   'Assignments',
   'Commitments',
   'Engagements',
@@ -55,7 +65,7 @@ const remote = makeCollections(fb, [
 ])
 
 remote.Users = {
-  set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
+  set: (uid, profileKey) => usersRef.child(uid).set(profileKey),
 }
 
 import braintree from 'braintree-node'
@@ -67,14 +77,4 @@ remote.gateway = braintree({
   privateKey: cfg.BT_PRIVATE_KEY,
 })
 
-console.log('Authenticating...')
-
-fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), err => {
-  if (err) {
-    console.log('FB Auth err:',err); process.exit()
-  } else {
-    console.log('FB Authed successfully')
-  }
-})
-
-startDispatch(fb.child('!queue'), remote, tasks)
+startDispatch(queueRef, remote, tasks)
