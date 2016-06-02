@@ -1,18 +1,6 @@
 import {isAdmin, isUser} from './authorization'
 import {ifElse, identity, tap, flip, curryN, __ as _, propOr} from 'ramda'
 
-// const create = (values, uid, {Profiles}) =>
-//   Profiles.first('uid', uid)
-//   .then(profile =>
-//     !profile ?
-//     Profiles.push({...values,
-//       uid,
-//       isAdmin: false,
-//       isEAP: false,
-//     }).key() :
-//     profile.$key
-//   )
-
 const setUserToProfile = curryN(3, (uid, profileKey, {Users}) =>
   tap(() => Users.set(uid, profileKey), profileKey))
 

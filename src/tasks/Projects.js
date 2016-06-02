@@ -7,17 +7,8 @@ const create = (values, uid, {Profiles, Projects}) =>
     return (isAdmin(user) || isEAP(user)) &&
       Projects.push({...values,
         ownerProfileKey: user.$key,
-      }).key()
+      }).key
   })
-
-// const create = (values, uid, {Profiles, Projects}) =>
-//   Profiles.by('uid', uid)
-//   .then(user =>
-//     (isAdmin(user) || isEAP(user)) &&
-//       Projects.push({...values,
-//         ownerProfileKey: user.$key,
-//       }).key()
-//   )
 
 const remove = (key, uid, {Profiles, Projects}) =>
   Promise.all([
