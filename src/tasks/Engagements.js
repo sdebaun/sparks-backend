@@ -1,71 +1,6 @@
 /* eslint max-nested-callbacks: 0 */
-// import {isAdmin, isUser} from './authorization'
-// import Promise from 'prfun'
-// import moment from 'moment'
-
 require('prfun/smash')
-
-const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
-const DOMAIN = process.env['DOMAIN']
-
-function getEmailInfo({key, oppKey, profileKey, uid, Profiles, Opps, Projects}) { //eslint-disable-line max-len
-  return Promise.all([Profiles.get(profileKey), Opps.get(oppKey)])
-    .then(([profile, opp]) =>
-      Projects.get(opp.projectKey)
-        .then(project => ({project, opp, user: profile, key, uid, profileKey}))
-    )
-}
-
-function sendEngagmentEmail({user, project, opp, key, uid}, {templateId, subject, sendAt = false}) { // eslint-disable-line max-len
-  const email = new sendgrid.Email()
-  email.addTo(user.email)
-  email.subject = subject + ` ${project.name}`
-  email.from = 'help@sparks.network'
-  email.html = ' '
-
-  email.addFilter('templates', 'enable', 1)
-  email.addFilter('templates', 'template_id', templateId)
-
-  email.addSubstitution('-username-', user.fullName)
-  email.addSubstitution('-opp_name-', opp.name)
-  email.addSubstitution('-project_name-', project.name)
-  email.addSubstitution('-engagementurl-', `${DOMAIN}/engaged/${key}/`)
-
-  if (sendAt) { email.setSendAt(sendAt) }
-
-  sendgrid.send(email, (err, json) => {
-    if (err) { return console.error(err) }
-    console.log(json)
-  })
-
-  return arguments[0]
-}
-/*
-function scheduleReminderEmail(info, Assignments, Shifts) {
-  return console.log('info', info) || Assignments.by('profileKey', info.uid)
-    .then(assignments => console.log(assignments) ||
-      assignments.filter(a => a.engagementKey === info.key)
-    )
-    .then(assignments => assignments[0])
-    .then(assignment => Shifts.get(assignment.shiftKey))
-    .then(shift => {
-      const sendAt = moment(shift.date).subtract(7, 'days').unix()
-      console.log(sendAt, moment(Date.now()))
-      console.log(sendAt.diff(moment(Date.now(), 'Days')))
-      if (sendAt.diff(moment(Date.now(), 'Days')) >= 7) {
-        // schedule for future if its more than a week away
-        return sendEngagmentEmail(info, {
-          subject: 'Reminder for',
-          templateId: '2d01fe18-b230-4e92-b234-26e14b30cd30',
-          sendAt,
-        })
-      }
-      return sendEngagmentEmail(info, {
-        subject: 'Reminder for',
-        templateId: '2d01fe18-b230-4e92-b234-26e14b30cd30',
-      })
-    })
-}*/
+import {getEmailInfo, sendEngagmentEmail} from './emails'
 
 const create =
   (values, uid, {gateway, Profiles, Engagements, Opps, Projects}) =>
@@ -101,19 +36,10 @@ const remove = (key, uid, {Assignments, Engagements, Shifts}) =>
   .then(() => Engagements.child(key).remove())
   .then(() => key)
 
-  // Promise.all([
-  //   Profiles.first('uid', uid),
-  //   Engagements.get(key),
-  // ])
-  // .then(([user, fulfiller]) =>
-  //   Assignments.by('engagementKey', key)
-  //     .
-  //   Promise.all([
-  //     Assignments.
-
-  //   ])
-  //   .then(() => Engagements.child(key).remove())
-  // )
+function OppConfirmationsOn(Opps, oppKey) {
+  return Opps.get(oppKey)
+    .then(opp => opp.confirmationsOn || false)
+}
 
 const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => { //eslint-disable-line max-len
   // const isConfirmed = !!(values.isAssigned && values.isPaid)
@@ -124,10 +50,16 @@ const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => 
     .then(engagment => {
       if (values.isAccepted) {
         return getEmailInfo({key, profileKey: engagment.profileKey, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
-          .then(info => sendEngagmentEmail(info, {
-            templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-            subject: 'Application accepted for',
-          }))
+          .then(info => Promise.all([
+            OppConfirmationsOn(Opps, engagment.oppKey),
+            Promise.resolve(info),
+          ]))
+          .then(([confirmationsOn, info]) => confirmationsOn ?
+            sendEngagmentEmail(info, {
+              templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+              subject: 'Application accepted for',
+            }) : null
+          )
           .then(() => engagment)
       }
       return engagment
