@@ -2,7 +2,7 @@ import Seneca from 'seneca'
 import {store} from 'seneca-firebase'
 import cron from 'seneca-cron'
 
-function makeSenecaApp() {
+function makeSenecaApp(remote) {
   const seneca = Seneca()
   seneca.use('entity')
   seneca.use(store, {
@@ -30,6 +30,20 @@ function makeSenecaApp() {
       sum: {POST: true},
     },
   }})
+
+  function sendConfirmationEmails() {
+  }
+
+  seneca.act({
+    role: 'cron',
+    cmd: 'addjob',
+    time: '*/10 * * * * *',
+    after: null,
+    timezone: null,
+    act: sendConfirmationEmails,
+  }, (err, res) => {
+  })
+
 
   return seneca
 }

@@ -41,7 +41,7 @@ function OppConfirmationsOn(Opps, oppKey) {
     .then(opp => opp.confirmationsOn || false)
 }
 
-const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => { //eslint-disable-line max-len
+const update = ({key, values}, uid, {Engagements, Confirmations, Profiles, Opps, Projects}) => { //eslint-disable-line max-len
   // const isConfirmed = !!(values.isAssigned && values.isPaid)
 
   // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
@@ -49,6 +49,10 @@ const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => 
     .then(() => Engagements.get(key))
     .then(engagment => {
       if (values.isAccepted) {
+        Confirmations.child('engagements').child(engagment.oppKey).child(key).set(true)
+      }
+    )
+
         return getEmailInfo({key, profileKey: engagment.profileKey, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
           .then(info => Promise.all([
             OppConfirmationsOn(Opps, engagment.oppKey),

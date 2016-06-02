@@ -32,7 +32,6 @@ import tasks from './tasks'
 const app = express()
 app.use(bodyParser.json())
 
-//app.use(seneca().export('web'))
 app.get('/', (req,res) => res.send('Hello World!'))
 
 app.listen(cfg.PORT, () => console.log('Listening on ', cfg.PORT))
@@ -51,6 +50,7 @@ console.log('Connected firebase to', cfg.FIREBASE_HOST)
 const remote = makeCollections(ref, [
   'Assignments',
   'Commitments',
+  'Confirmations',
   'Engagements',
   'Fulfillers',
   'Memberships',
@@ -77,4 +77,5 @@ remote.gateway = braintree({
   privateKey: cfg.BT_PRIVATE_KEY,
 })
 
+app.use(seneca(remote).export('web'))
 startDispatch(queueRef, remote, tasks)

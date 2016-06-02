@@ -1,15 +1,15 @@
 const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
 const DOMAIN = process.env['DOMAIN']
 
-export function getEmailInfo({key, oppKey, profileKey, uid, Profiles, Opps, Projects}) { //eslint-disable-line max-len
+export function getEmailInfo({key, oppKey, profileKey, Profiles, Opps, Projects}) { //eslint-disable-line max-len
   return Promise.all([Profiles.get(profileKey), Opps.get(oppKey)])
     .then(([profile, opp]) =>
       Projects.get(opp.projectKey)
-        .then(project => ({project, opp, user: profile, key, uid, profileKey}))
+        .then(project => ({project, opp, user: profile, key, profileKey}))
     )
 }
 
-export function sendEngagmentEmail({user, project, opp, key, uid}, {templateId, subject, sendAt = false}) { // eslint-disable-line max-len
+export function sendEngagmentEmail({user, project, opp, key}, {templateId, subject, sendAt = false}) { // eslint-disable-line max-len
   const email = new sendgrid.Email()
   email.addTo(user.email)
   email.subject = subject + ` ${project.name}`
