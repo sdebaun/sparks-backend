@@ -33,3 +33,26 @@ export function sendEngagmentEmail({user, project, opp, key, uid}, {templateId, 
 
   return arguments[0]
 }
+
+export function sendOrganizerEmail({values, project, key}, {templateId, subject, sendAt = false}) { // eslint-disable-line max-len
+  const email = new sendgrid.Email()
+  email.addTo(values.inviteEmail)
+  email.subject = subject + ` ${project.name}`
+  email.from = 'help@sparks.network'
+  email.html = ' '
+
+  email.addFilter('templates', 'enable', 1)
+  email.addFilter('templates', 'template_id', templateId)
+
+  email.addSubstitution('-project_name-', project.name)
+  email.addSubstitution('-invite_url-', `${DOMAIN}/organize/${key}/`)
+
+  if (sendAt) { email.setSendAt(sendAt) }
+
+  sendgrid.send(email, (err, json) => {
+    if (err) { return console.error(err) }
+    console.log(json)
+  })
+
+  return arguments[0]
+}

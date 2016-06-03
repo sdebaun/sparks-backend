@@ -4,6 +4,7 @@ import Engagements from './Engagements'
 import Fulfillers from './Fulfillers'
 import Memberships from './Memberships'
 import Opps from './Opps'
+import Organizers from './Organizers'
 import Profiles from './Profiles'
 import ProjectImages from './ProjectImages'
 import Projects from './Projects'
@@ -18,6 +19,7 @@ export default {
   Fulfillers,
   Memberships,
   Opps,
+  Organizers,
   Profiles,
   Projects,
   ProjectImages,
