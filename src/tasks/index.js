@@ -1,3 +1,4 @@
+import Arrivals from './Arrivals'
 import Assignments from './Assignments'
 import Commitments from './Commitments'
 import Engagements from './Engagements'
@@ -12,6 +13,7 @@ import TeamImages from './TeamImages'
 import Teams from './Teams'
 
 export default {
+  Arrivals,
   Assignments,
   Commitments,
   Engagements,
