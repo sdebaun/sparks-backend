@@ -1,16 +1,5 @@
 import {isAdmin, isUser} from './authorization'
-
-// const create = (values, uid, {Profiles}) =>
-//   Profiles.first('uid', uid)
-//   .then(profile =>
-//     !profile ?
-//     Profiles.push({...values,
-//       uid,
-//       isAdmin: false,
-//       isEAP: false,
-//     }).key() :
-//     profile.$key
-//   )
+import {cond, T, always} from 'ramda'
 
 const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
   const profileKey = Profiles.push({...values,
@@ -31,15 +20,27 @@ const create = (values, uid, {Profiles, Users}) =>
       profile.$key
   })
 
+const adminUpdate = profile => (values, {Profiles}) =>
+  Profiles.child(profile.$key).update(values)
+
+const userUpdate = profile => (values, {Profiles}) =>
+  Profiles.child(profile.$key).update({
+    ...values,
+    isAdmin: profile.isAdmin,
+    isEAP: profile.isEAP,
+  })
+
 const update = ({key, values}, uid, {Profiles}) =>
   Profiles.first('uid', uid)
   .then(profile =>
-    isAdmin(profile) && Profiles.child(key).update(values) && key ||
-    isUser(profile,key) && Profiles.child(key).update({...values,
-      isAdmin: profile.isAdmin,
-      isEAP: profile.isAdmin,
-    }) && key
+    cond([
+      [isAdmin, adminUpdate],
+      [isUser, userUpdate],
+      [T, always(T)],
+    ])(profile, key)
   )
+  .then(fn => fn(values, {Profiles}))
+  .then(() => key)
 
 export default {
   create,

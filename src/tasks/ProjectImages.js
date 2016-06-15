@@ -1,27 +1,13 @@
-import {isAdmin, isUser} from './authorization'
+import {userCanUpdateProject} from './authorization'
 
-const canChange = (profile, project) =>
-  isAdmin(profile) || isUser(profile, project.ownerProfileKey)
-
-const profileAndProject = (key, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) => {
-    if (!canChange(profile, project)) {
-      throw new Error('Unauthorized')
-    }
-  })
-
-const set = ({key, values}, uid, {Profiles, Projects, ProjectImages}) =>
-  profileAndProject(key, uid, {Profiles, Projects})
-  .then(() => ProjectImages.child(key).set(values))
+const set = ({key, values}, uid, models) =>
+  userCanUpdateProject({uid, projectKey: key}, models)
+  .then(() => models.ProjectImages.child(key).set(values))
   .then(() => key)
 
-const remove = (key, uid, {Profiles, Projects, ProjectImages}) =>
-  profileAndProject(key, uid, {Profiles, Projects})
-  .then(() => ProjectImages.child(key).remove())
+const remove = (key, uid, models) =>
+  userCanUpdateProject({uid, projectKey: key}, models)
+  .then(() => models.ProjectImages.child(key).remove())
 
 export default {
   set,

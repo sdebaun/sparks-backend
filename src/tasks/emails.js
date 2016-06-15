@@ -1,3 +1,5 @@
+import Promise from 'bluebird'
+
 const sendgrid = require('sendgrid')(process.env['SENDGRID_KEY'])
 const DOMAIN = process.env['DOMAIN']
 
@@ -39,6 +41,7 @@ export function sendOrganizerEmail({values, project, key}, {templateId, subject,
   email.addTo(values.inviteEmail)
   email.subject = subject + ` ${project.name}`
   email.from = 'help@sparks.network'
+  email.setFromName('Sparks.Network')
   email.html = ' '
 
   email.addFilter('templates', 'enable', 1)
@@ -49,10 +52,10 @@ export function sendOrganizerEmail({values, project, key}, {templateId, subject,
 
   if (sendAt) { email.setSendAt(sendAt) }
 
-  sendgrid.send(email, (err, json) => {
-    if (err) { return console.error(err) }
-    console.log(json)
+  return new Promise((resolve, reject) => {
+    sendgrid.send(email, (err, json) => {
+      if (err) { console.error(err); return reject(err) }
+      resolve(json)
+    })
   })
-
-  return arguments[0]
 }

@@ -1,12 +1,14 @@
-import {isAdmin, isEAP, isUser} from './authorization'
+import {userCanUpdateProject} from './authorization'
+import {getStuff} from '../util'
 
-const set = ({key, values}, uid, {Profiles, Projects, TeamImages}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-  ])
-  .then(([profile]) =>
-    TeamImages.child(key).set(values) && key
-  )
+const set = ({key, values}, uid, models) =>
+  getStuff(models)({
+    team: key,
+  })
+  .then(({team}) =>
+    userCanUpdateProject({uid, projectKey: team.projectKey}, models))
+  .then(() =>
+    models.TeamImages.child(key).set(values) && key)
 
 export default {
   set,

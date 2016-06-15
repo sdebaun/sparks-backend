@@ -1,9 +1,7 @@
-import {isAdmin, isUser} from './authorization'
-
-const create = (values, uid, {Profiles, Commitments, Projects}) =>
+const create = (values, uid, {Commitments}) =>
   Commitments.push(values).then(ref => ref.key())
 
-const remove = (key, uid, {Profiles, Commitments, Projects}) =>
+const remove = (key, uid, {Profiles, Commitments}) =>
   Promise.all([
     Profiles.first('uid', uid),
     Commitments.get(key),
@@ -13,7 +11,7 @@ const remove = (key, uid, {Profiles, Commitments, Projects}) =>
   )
 
 const update = ({key, values}, uid, {Commitments}) =>
-  Commitments.child(key).update(values).then(ref => key)
+  Commitments.child(key).update(values).then(() => key)
 
 export default {
   create,

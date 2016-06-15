@@ -1,23 +1,21 @@
-import {isAdmin, isUser} from './authorization'
-
-const create = (values, uid, {Profiles, Memberships, Projects}) =>
+const create = (values, uid, {Memberships}) =>
   Memberships.push({...values,
     isApplied: true,
     isAccepted: false,
-    isConfirmed: false,      
+    isConfirmed: false,
   }).then(ref => ref.key())
 
-const remove = (key, uid, {Profiles, Memberships, Projects}) =>
+const remove = (key, uid, {Profiles, Memberships}) =>
   Promise.all([
     Profiles.first('uid', uid),
     Memberships.get(key),
   ])
-  .then(([user, fulfiller]) =>
+  .then(() =>
     Memberships.child(key).remove() && key
   )
 
 const update = ({key, values}, uid, {Memberships}) =>
-  Memberships.child(key).update(values).then(ref => key)
+  Memberships.child(key).update(values).then(() => key)
 
 export default {
   create,
