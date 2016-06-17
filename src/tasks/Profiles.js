@@ -1,7 +1,7 @@
 import {isAdmin, isUser} from './authorization'
 import {cond, T, always} from 'ramda'
 
-const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
+const makeUserAndProfile = (uid, values, {models: {Profiles, Users}}) => {
   const profileKey = Profiles.push({...values,
     uid,
     isAdmin: false,
@@ -11,7 +11,7 @@ const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
   return profileKey
 }
 
-const create = (values, uid, {Profiles, Users}) =>
+const create = (values, uid, {models: {Profiles, Users}}) =>
   Profiles.first('uid', uid)
   .then(profile => {
     console.log('profile',profile,values,uid)
@@ -20,17 +20,17 @@ const create = (values, uid, {Profiles, Users}) =>
       profile.$key
   })
 
-const adminUpdate = profile => (values, {Profiles}) =>
+const adminUpdate = profile => (values, {models: {Profiles}}) =>
   Profiles.child(profile.$key).update(values)
 
-const userUpdate = profile => (values, {Profiles}) =>
+const userUpdate = profile => (values, {models: {Profiles}}) =>
   Profiles.child(profile.$key).update({
     ...values,
     isAdmin: profile.isAdmin,
     isEAP: profile.isEAP,
   })
 
-const update = ({key, values}, uid, {Profiles}) =>
+const update = ({key, values}, uid, {models: {Profiles}}) =>
   Profiles.first('uid', uid)
   .then(profile =>
     cond([

@@ -1,12 +1,10 @@
-import {userCanUpdateProject} from './authorization'
-import {getStuff} from '../util'
 import {sendOrganizerEmail} from './emails'
 import {not, unless, equals} from 'ramda'
 
-const sendEmail = ({key}, uid, models) =>
-  getStuff(models)({organizer: key})
+const sendEmail = ({key}, uid, {getStuff, auths}) =>
+  getStuff({organizer: key})
   .then(({organizer}) =>
-    userCanUpdateProject({uid, projectKey: organizer.projectKey}, models)
+    auths.userCanUpdateProject({uid, projectKey: organizer.projectKey})
     .then(({project}) => ({project, organizer}))
   )
   .then(({project, organizer}) =>
@@ -20,8 +18,8 @@ const sendEmail = ({key}, uid, models) =>
     }))
   .then(() => key)
 
-const create = (values, uid, models) =>
-  userCanUpdateProject({uid, projectKey: values.projectKey}, models)
+const create = (values, uid, {auths, models}) =>
+  auths.userCanUpdateProject({uid, projectKey: values.projectKey})
   .then(({profile}) => {
     const key = models.Organizers.push({
       ...values,
@@ -32,10 +30,10 @@ const create = (values, uid, models) =>
     return key
   })
 
-const remove = ({key, projectKey}, uid, models) =>
-  userCanUpdateProject({uid, projectKey}, models)
-  .then(() =>
-    models.Organizers.child(key).remove() && key)
+const remove = ({key, projectKey}, uid, {auths, models}) =>
+  auths.userCanUpdateProject({uid, projectKey})
+  .then(() => models.Organizers.child(key).remove())
+  .then(() => key)
 
 const canAccept = ({profile, organizer}) =>
   profile &&
@@ -48,8 +46,8 @@ const rejectCannotAccept = unless(canAccept, ({profile, organizer}) =>
   Promise.reject(
     `User ${profile.$key} cannot accept organizer invite ${organizer.$key}`))
 
-const accept = ({key}, uid, models) =>
-  getStuff(models)({
+const accept = ({key}, uid, {models, getStuff}) =>
+  getStuff({
     profile: {uid},
     organizer: key,
   })

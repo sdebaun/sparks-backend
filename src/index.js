@@ -1,4 +1,6 @@
 import express from 'express'
+import Authorizations from './authorization'
+import {getStuff} from './util'
 
 const requiredVars = [
   'FIREBASE_HOST',
@@ -38,7 +40,7 @@ app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
 const fb = new Firebase(cfg.FIREBASE_HOST)
 console.log('Connected firebase to', cfg.FIREBASE_HOST)
 
-const remote = makeCollections(fb, [
+const models = makeCollections(fb, [
   'Assignments',
   'Commitments',
   'Engagements',
@@ -54,9 +56,13 @@ const remote = makeCollections(fb, [
   'TeamImages',
 ])
 
-remote.Users = {
+models.Users = {
   set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
 }
+
+const auths = Authorizations(models)
+const remote = {auths, models}
+remote.getStuff = getStuff(models)
 
 import braintree from 'braintree-node'
 
@@ -77,4 +83,4 @@ fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), err => {
   }
 })
 
-startDispatch(fb.child('!queue'), remote, tasks)
+startDispatch(fb.child('!queue'), remote, auths, tasks)

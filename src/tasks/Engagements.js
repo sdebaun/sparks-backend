@@ -3,7 +3,7 @@ require('prfun/smash')
 import {getEmailInfo, sendEngagmentEmail} from './emails'
 
 const create =
-  (values, uid, {gateway, Profiles, Engagements, Opps, Projects}) =>
+  (values, uid, {gateway, models: {Profiles, Engagements, Opps, Projects}}) =>
     gateway.generateClientToken()
     .then(({clientToken}) =>
       Engagements.push({...values,
@@ -24,7 +24,7 @@ const create =
 
 import {updateCounts} from './Assignments'
 
-const remove = (key, uid, {Assignments, Engagements, Shifts}) =>
+const remove = (key, uid, {models: {Assignments, Engagements, Shifts}}) =>
   Assignments.by('engagementKey', key)
   .then(engs => Promise.all(engs.map(({$key}) => Assignments.get($key))))
   .then(assigns =>
@@ -41,7 +41,7 @@ function OppConfirmationsOn(Opps, oppKey) {
     .then(opp => opp.confirmationsOn || false)
 }
 
-const update = ({key, values}, uid, {Engagements, Profiles, Opps, Projects}) => { //eslint-disable-line max-len
+const update = ({key, values}, uid, {models: {Engagements, Profiles, Opps, Projects}}) => { //eslint-disable-line max-len
   // const isConfirmed = !!(values.isAssigned && values.isPaid)
 
   // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
@@ -77,7 +77,7 @@ const calcSparks = (pmt, dep) =>
 
 const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
-const pay = ({key, values}, uid, {Engagements, Commitments, gateway, Profiles, Opps, Projects}) => // eslint-disable-line max-len
+const pay = ({key, values}, uid, {gateway, models: {Engagements, Commitments, Profiles, Opps, Projects}}) => // eslint-disable-line max-len
   Engagements.get(key).then(({oppKey}) =>
     Commitments.by('oppKey', oppKey)
   )

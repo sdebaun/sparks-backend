@@ -1,9 +1,8 @@
 import Promise from 'bluebird'
 import {
   equals, anyPass, unless, pathOr, juxt, compose, apply, contains, map, prop,
-  path, append, propOr, merge,
+  path, append, propOr, merge, tap,
 } from 'ramda'
-import {getStuff} from '../util'
 
 export const isAdmin = propOr(false, 'isAdmin')
 
@@ -11,8 +10,10 @@ export const isEAP = propOr(false, 'isEAP')
 
 export const isUser = (profile, key) => profile && profile.$key === key
 
-const rejectWith = message => data =>
-  console.log('Auth error', message, data) || Promise.reject(message)
+const rejectWith = message => data => {
+  console.log('Auth error', message, data)
+  return Promise.reject(message)
+}
 
 /**
 * If the given function returns a falsy value then this will reject the
@@ -70,30 +71,34 @@ const removeProjectRules = [
 const updateTeamRules = append(profileIsTeamOwner, updateProjectRules)
 const updateOppRules = append(profileIsOppOwner, updateProjectRules)
 
+const authorizations = (models, injectedGetStuff) => {
+  const getStuff = injectedGetStuff(models)
+
 // Each of these will return a promise that rejects if the authentication rules
 // fail, otherwise will resolve with an object containing anything it loaded.
 
 // Resolves {profile, project}
-export const userCanCreateProject = ({uid}, models) =>
-  getStuff(models)({profile: {uid}})
+  const userCanCreateProject = ({uid}) =>
+  getStuff({profile: {uid}})
   .then(rejectUnless(
     'User cannot create project',
     anyPass(createProjectRules)))
 
 // Resolves {profile, project, organizers}
-export const userCanUpdateProject = ({uid, projectKey}, models) =>
-  getStuff(models)({
+  const userCanUpdateProject = ({uid, projectKey}) =>
+  getStuff({
     profile: {uid},
     project: projectKey,
     organizers: {projectKey},
   })
+  .then(tap(d => console.log(d)))
   .then(rejectUnless(
     'User cannot update project',
     anyPass(updateProjectRules)))
 
 // Resolves {profile, project}
-export const userCanRemoveProject = ({uid, projectKey}, models) =>
-  getStuff(models)({
+  const userCanRemoveProject = ({uid, projectKey}) =>
+  getStuff({
     profile: {uid},
     project: projectKey,
   })
@@ -102,13 +107,13 @@ export const userCanRemoveProject = ({uid, projectKey}, models) =>
     anyPass(removeProjectRules)))
 
 // Resolves {profile, team, project, organizers}
-export const userCanUpdateTeam = ({uid, teamKey}, models) =>
-  getStuff(models)({
+  const userCanUpdateTeam = ({uid, teamKey}) =>
+  getStuff({
     profile: {uid},
     team: teamKey,
   })
   .then(({profile, team}) =>
-    getStuff(models)({
+    getStuff({
       project: team.projectKey,
       organizers: {projectKey: team.projectKey},
     }).then(merge({profile, team})))
@@ -118,13 +123,13 @@ export const userCanUpdateTeam = ({uid, teamKey}, models) =>
     anyPass(updateTeamRules)))
 
 // Resolves {profile, opp, project, organizers}
-export const userCanUpdateOpp = ({uid, oppKey}, models) =>
-  getStuff(models)({
+  const userCanUpdateOpp = ({uid, oppKey}) =>
+  getStuff({
     profile: {uid},
     opp: oppKey,
   })
   .then(({profile, opp}) =>
-    getStuff(models)({
+    getStuff({
       project: opp.projectKey,
       organizers: {projectKey: opp.projectKey},
     })
@@ -133,3 +138,13 @@ export const userCanUpdateOpp = ({uid, oppKey}, models) =>
     rejectUnless(
       'User cannot update opp',
       anyPass(updateOppRules)))
+
+  return {
+    userCanCreateProject,
+    userCanUpdateProject,
+    userCanRemoveProject,
+    userCanUpdateTeam,
+    userCanUpdateOpp,
+  }
+}
+export default authorizations

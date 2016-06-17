@@ -1,12 +1,9 @@
 /* eslint max-nested-callbacks: 0 */
-import {
-  userCanUpdateProject, userCanUpdateOpp,
-} from './authorization'
 import {getEmailInfo, sendEngagmentEmail} from './emails'
 import {always} from 'ramda'
 
-const create = (values, uid, models) =>
-  userCanUpdateProject({uid, projectKey: values.projectKey}, models)
+const create = (values, uid, {auths, models}) =>
+  auths.userCanUpdateProject({uid, projectKey: values.projectKey})
   .then(({profile}) =>
     models.Opps.push({
       ...values,
@@ -14,8 +11,8 @@ const create = (values, uid, models) =>
     }).key()
   )
 
-const remove = (key, uid, models) =>
-  userCanUpdateOpp({uid, oppKey: key}, models)
+const remove = (key, uid, {auths, models}) =>
+  auths.userCanUpdateOpp({uid, oppKey: key})
   .then(() => models.Opps.child(key).remove())
   .then(always(key))
 
@@ -43,8 +40,8 @@ function checkAndSendAcceptanceEmail(key, {confirmationsOn}, uid, opp, {Engageme
   return true
 }
 
-const update = ({key, values}, uid, models) =>
-  userCanUpdateOpp({uid, oppKey: key}, models)
+const update = ({key, values}, uid, {auths, models}) =>
+  auths.userCanUpdateOpp({uid, oppKey: key})
   .then(({opp}) =>
     models.Opps.child(key).update(values)
       .then(() => checkAndSendAcceptanceEmail(key, values, uid, opp, models))
