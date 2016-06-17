@@ -12,20 +12,22 @@ import Projects from './Projects'
 import Shifts from './Shifts'
 import TeamImages from './TeamImages'
 import Teams from './Teams'
+import Emails from './emails'
 
-export default {
-  Arrivals,
-  Assignments,
-  Commitments,
-  Engagements,
-  Fulfillers,
-  Memberships,
-  Opps,
-  Organizers,
-  Profiles,
-  Projects,
-  ProjectImages,
-  Shifts,
-  TeamImages,
-  Teams,
+export default function(seneca, options) {
+  seneca.use(Arrivals, options)
+  seneca.use(Assignments, options)
+  seneca.use(Commitments, options)
+  seneca.use(Engagements, options)
+  seneca.use(Fulfillers, options)
+  seneca.use(Memberships, options)
+  seneca.use(Opps, options)
+  seneca.use(Organizers, options)
+  seneca.use(Profiles, options)
+  seneca.use(Projects, options)
+  seneca.use(ProjectImages, options)
+  seneca.use(Shifts, options)
+  seneca.use(TeamImages, options)
+  seneca.use(Teams, options)
+  seneca.use(Emails, options)
 }

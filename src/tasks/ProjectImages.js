@@ -1,13 +1,15 @@
-const set = ({key, values}, uid, {models, auths}) =>
-  auths.userCanUpdateProject({uid, projectKey: key})
-  .then(() => models.ProjectImages.child(key).set(values))
-  .then(() => key)
+function actions({auths: {userCanUpdateProject}, models: {ProjectImages}}) {
+  this.add({role:'ProjectImages',cmd:'set'}, ({uid, key, values}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+      .then(() => ProjectImages.child(key).set(values))
+      .then(() => respond(null, {key}))
+      .catch(err => respond(err)))
 
-const remove = (key, uid, {models, auths}) =>
-  auths.userCanUpdateProject({uid, projectKey: key})
-  .then(() => models.ProjectImages.child(key).remove())
-
-export default {
-  set,
-  remove,
+  this.add({role:'ProjectImages',cmd:'remove'}, ({uid, key}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+    .then(() => ProjectImages.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions

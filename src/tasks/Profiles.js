@@ -1,48 +1,51 @@
-import {isAdmin, isUser} from '../authorization'
-import {cond, T, always} from 'ramda'
+import {omit} from 'ramda'
 
-const makeUserAndProfile = (uid, values, {models: {Profiles, Users}}) => {
-  const profileKey = Profiles.push({...values,
-    uid,
-    isAdmin: false,
-    isEAP: false,
-  }).key()
-  Users.set(uid, profileKey)
-  return profileKey
+function action({models: {Profiles, Users}, getStuff}) {
+  const makeUserAndProfile = (uid, values) => {
+    const profileKey = Profiles.push({...values,
+      uid,
+      isAdmin: false,
+      isEAP: false,
+    }).key()
+
+    return Users.set(uid, profileKey).then(() => profileKey)
+  }
+
+  this.add({role:'Profiles',cmd:'create'}, ({uid, values}, respond) =>
+    Profiles.first('uid', uid)
+    .then(profile =>
+      profile ? profile.$key : makeUserAndProfile(uid, values))
+    .then(key => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update',admin:true},
+          ({key, values}, respond) =>
+    Profiles.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update',admin:false},
+          ({key, values, uid}, respond) =>
+    getStuff({profile: {uid}})
+    .then(({profile}) =>
+      profile.$key === key ?
+      true :
+      Promise.reject('User cannot update the profile of another user'))
+    .then(() =>
+      Profiles.child(key).update(omit(['isAdmin', 'isEAP'], values)))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update'}, (msg, respond) =>
+    getStuff({profile: {uid: msg.uid}})
+    .then(({profile}) =>
+    this.act({
+      ...msg,
+      role:'Profiles',
+      cmd:'update',
+      admin:profile.isAdmin,
+    }, respond))
+    .catch(err => respond(err)))
 }
 
-const create = (values, uid, {models: {Profiles, Users}}) =>
-  Profiles.first('uid', uid)
-  .then(profile => {
-    console.log('profile',profile,values,uid)
-    return !profile ?
-      makeUserAndProfile(uid, values, {Profiles, Users}) :
-      profile.$key
-  })
-
-const adminUpdate = profile => (values, {models: {Profiles}}) =>
-  Profiles.child(profile.$key).update(values)
-
-const userUpdate = profile => (values, {models: {Profiles}}) =>
-  Profiles.child(profile.$key).update({
-    ...values,
-    isAdmin: profile.isAdmin,
-    isEAP: profile.isEAP,
-  })
-
-const update = ({key, values}, uid, {models: {Profiles}}) =>
-  Profiles.first('uid', uid)
-  .then(profile =>
-    cond([
-      [isAdmin, adminUpdate],
-      [isUser, userUpdate],
-      [T, always(T)],
-    ])(profile, key)
-  )
-  .then(fn => fn(values, {Profiles}))
-  .then(() => key)
-
-export default {
-  create,
-  update,
-}
+export default action
