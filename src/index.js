@@ -61,9 +61,9 @@ models.Users = {
   set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
 }
 
-const auths = Authorizations(models)
-const remote = {auths, models}
+const remote = {models}
 remote.getStuff = getStuff(models)
+remote.auths = Authorizations(models, remote.getStuff)
 
 import braintree from 'braintree-node'
 
@@ -84,4 +84,4 @@ fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), err => {
   }
 })
 
-startDispatch(fb.child('!queue'), remote, auths, tasks)
+startDispatch(fb.child('!queue'), remote, tasks)
