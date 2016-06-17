@@ -91,7 +91,7 @@ const createProject$ = projects$
 
 // needs to update .project child of every team with matching .projectKey
 const updateProject$ = projects$
-  .filter(({action}) => action == 'update')
+  .filter(({action}) => action === 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update Project', key, values)
     const ref = fb.child('Projects').child(key).update(values)
@@ -99,7 +99,7 @@ const updateProject$ = projects$
   })
 
 const removeProject$ = projects$
-  .filter(({action}) => action == 'remove')
+  .filter(({action}) => action === 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('remove Projects',payload)
     const ref = fb.child('Projects').child(payload).remove()
@@ -107,10 +107,10 @@ const removeProject$ = projects$
   })
 
 const projectImages$ = authedQueue$
-  .filter(({domain}) => domain == 'ProjectImages')
+  .filter(({domain}) => domain === 'ProjectImages')
 
 const setProjectImages$ = projectImages$
-  .filter(({action}) => action == 'set')
+  .filter(({action}) => action === 'set')
   .subscribe(({uid, payload: {key, values}}) => {
     const domain = 'ProjectImages'
     console.log('key',key,'values',values)
@@ -119,10 +119,10 @@ const setProjectImages$ = projectImages$
   })
 
 const organizers$ = authedQueue$
-  .filter(({domain}) => domain == 'Organizers')
+  .filter(({domain}) => domain === 'Organizers')
 
 const createOrganizer$ = organizers$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create organizer',payload)
     const ref = fb.child('Organizers').push({...payload,authorProfileKey:profileKey})
@@ -130,7 +130,7 @@ const createOrganizer$ = organizers$
   })
 
 const deleteOrganizer$ = organizers$
-  .filter(({action}) => action == 'remove')
+  .filter(({action}) => action === 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('remove Organizers',payload)
     const ref = fb.child('Organizers').child(payload).remove()
@@ -138,10 +138,10 @@ const deleteOrganizer$ = organizers$
   })
 
 const teams$ = authedQueue$
-  .filter(({domain}) => domain == 'Teams')
+  .filter(({domain}) => domain === 'Teams')
 
 const createTeam$ = teams$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     once('Projects', payload.projectKey).subscribe(project => {
       console.log('project:', project)
@@ -153,7 +153,7 @@ const createTeam$ = teams$
   })
 
 const updateTeam$ = teams$
-  .filter(({action}) => action == 'update')
+  .filter(({action}) => action === 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update Team', key, values)
     const ref = fb.child('Teams').child(key).update(values)
@@ -161,10 +161,10 @@ const updateTeam$ = teams$
   })
 
 const teamImages$ = authedQueue$
-  .filter(({domain}) => domain == 'TeamImages')
+  .filter(({domain}) => domain === 'TeamImages')
 
 const setTeamImages$ = teamImages$
-  .filter(({action}) => action == 'set')
+  .filter(({action}) => action === 'set')
   .subscribe(({uid, payload: {key, values}}) => {
     const domain = 'TeamImages'
     console.log('key',key,'values',values)
@@ -173,10 +173,10 @@ const setTeamImages$ = teamImages$
   })
 
 const profiles$ = authedQueue$
-  .filter(({domain}) => domain == 'Profiles')
+  .filter(({domain}) => domain === 'Profiles')
 
 const createProfile$ = profiles$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create profile',payload)
     const obj = {
@@ -213,10 +213,10 @@ const updateProfile$ = profiles$
   })
 
 const opps$ = authedQueue$
-  .filter(({domain}) => domain == 'Opps')
+  .filter(({domain}) => domain === 'Opps')
 
 const createOpp$ = opps$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     once('Projects', payload.projectKey).subscribe(project => {
       payload.project = project
@@ -227,7 +227,7 @@ const createOpp$ = opps$
   })
 
 const updateOpp$ = opps$
-  .filter(({action}) => action == 'update')
+  .filter(({action}) => action === 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update opp', key, values)
     const ref = fb.child('Opps').child(key).update(values)
@@ -246,10 +246,10 @@ const updateOpp$ = opps$
   })
 
 const fulfillers$ = authedQueue$
-  .filter(({domain}) => domain == 'Fulfillers')
+  .filter(({domain}) => domain === 'Fulfillers')
 
 const createFulfillers$ = fulfillers$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create fulfiller',payload)
     const ref = fb.child('Fulfillers').push({...payload, authorProfileKey: profileKey})
@@ -257,7 +257,7 @@ const createFulfillers$ = fulfillers$
   })
 
 const deleteFulfillers$ = fulfillers$
-  .filter(({action}) => action == 'delete')
+  .filter(({action}) => action === 'delete')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('delete fulfiller',payload)
     const ref = fb.child('Fulfillers').child(payload).remove()
@@ -284,10 +284,10 @@ const removeAssignments$ = assignments$
   })
 
 const engagements$ = authedQueue$
-  .filter(({domain}) => domain == 'Engagements')
+  .filter(({domain}) => domain === 'Engagements')
 
 const createEngagement$ = engagements$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     once('Opps', payload.oppKey).subscribe(opp => {
       payload.opp = opp
@@ -304,7 +304,7 @@ const createEngagement$ = engagements$
   })
 
 const deleteEngagement$ = engagements$
-  .filter(({action}) => action == 'remove')
+  .filter(({action}) => action === 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('delete Engagements',payload)
     const ref = fb.child('Engagements').child(payload).remove()
@@ -312,7 +312,7 @@ const deleteEngagement$ = engagements$
   })
 
 const updateEngagement$ = engagements$
-  .filter(({action}) => action == 'update')
+  .filter(({action}) => action === 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update Engagement', key, values)
     const ref = fb.child('Engagements').child(key).update(values)
@@ -320,10 +320,10 @@ const updateEngagement$ = engagements$
   })
 
 const commitments$ = authedQueue$
-  .filter(({domain}) => domain == 'Commitments')
+  .filter(({domain}) => domain === 'Commitments')
 
 const createCommitment$ = commitments$
-  .filter(({action}) => action == 'create')
+  .filter(({action}) => action === 'create')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('create Commitments',payload)
     const ref = fb.child('Commitments').push(payload)
@@ -331,7 +331,7 @@ const createCommitment$ = commitments$
   })
 
 const removeCommitment$ = commitments$
-  .filter(({action}) => action == 'remove')
+  .filter(({action}) => action === 'remove')
   .subscribe(({uid,profile,profileKey,payload}) => {
     console.log('remove Commitments',payload)
     const ref = fb.child('Commitments').child(payload).remove()
@@ -339,7 +339,7 @@ const removeCommitment$ = commitments$
   })
 
 const updateCommitment$ = commitments$
-  .filter(({action}) => action == 'update')
+  .filter(({action}) => action === 'update')
   .subscribe(({uid,payload: {key, values}}) => {
     console.log('update Commitment', key, values)
     const ref = fb.child('Commitments').child(key).update(values)

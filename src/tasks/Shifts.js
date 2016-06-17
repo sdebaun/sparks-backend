@@ -1,56 +1,32 @@
-import {isAdmin, isUser} from './authorization'
-
+import {always} from 'ramda'
 import {updateCounts} from './Assignments'
 
-const getTeamAndProject = (teamKey, {Teams, Projects}) =>
-  Teams.get(teamKey).then(team =>
-    Projects.get(team.projectKey).then(project => [team, project])
-  )
+const create = (values, uid, {models, auths}) =>
+  auths.userCanUpdateTeam({uid, teamKey: values.teamKey})
+  .then(({profile}) =>
+    models.Shifts.push({
+      ...values,
+      ownerProfileKey: profile.$key,
+    }).key())
 
-const create = (values, uid, {Profiles, Teams, Projects, Shifts}) =>
-  Profiles.first('uid', uid)
-  .then(user =>
-    getTeamAndProject(values.teamKey, {Teams, Projects}).then(r => [user, ...r])
-  )
-  .then(([user, team, project]) =>
-    (isAdmin(user) ||
-    isUser(user, team.ownerProfileKey) ||
-    isUser(user, project.ownerProfileKey)) &&
-    Shifts.push({...values,
-      ownerProfileKey: user.$key,
-    }).key()
-  )
+const remove = (key, uid, {models, auths, getStuff}) =>
+  getStuff({
+    shift: key,
+  })
+  .then(({shift}) =>
+    auths.userCanUpdateTeam({uid, teamKey: shift.teamKey}))
+  .then(() => models.Shifts.child(key).remove())
+  .then(always(key))
 
-const remove = (key, uid, {Profiles, Teams, Projects, Shifts}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Shifts.get(key),
-  ])
-  .then(([user, shift]) =>
-    getTeamAndProject(shift.teamKey, {Teams, Projects}).then(r => [user, ...r])
-  )
-  .then(([user, team, project]) =>
-    (isUser(user,team.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user)) &&
-      Shifts.child(key).remove() && key
-  )
-
-const update = ({key, values}, uid, {Profiles, Teams, Projects, Shifts, Assignments}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Shifts.get(key),
-  ])
-  .then(([user, shift]) =>
-    getTeamAndProject(shift.teamKey, {Teams, Projects}).then(r => [user, shift, ...r])
-  )
-  .then(([user, team, project]) =>
-    (isUser(user,team.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user)) &&
-      Shifts.child(key).update(values) && key
-  )
-  .then(() => updateCounts(key, {Assignments, Shifts}).then(() => key))
+const update = ({key, values}, uid, {models, auths, getStuff}) =>
+  getStuff({
+    shift: key,
+  })
+  .then(({shift}) =>
+    auths.userCanUpdateTeam({uid, teamKey: shift.teamKey}))
+  .then(() => models.Shifts.update(values))
+  .then(() => updateCounts(key, models))
+  .then(always(key))
 
 export default {
   create,

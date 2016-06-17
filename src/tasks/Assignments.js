@@ -1,46 +1,48 @@
-import {isAdmin, isUser} from './authorization'
+import {prop, propEq, always} from 'ramda'
 
-export const updateCounts = (shiftKey, {Assignments, Shifts}) =>
+export const updateCounts = (shiftKey, {models: {Assignments, Shifts}}) =>
   Assignments.by('shiftKey', shiftKey)
-    .then(assignments => { console.log('found',assignments.length); return assignments.length })
+    .then(prop('length'))
     .then(assigned => Shifts.child(shiftKey).update({assigned}))
 
-const create = (values, uid, {Profiles, Assignments, Shifts}) =>
+const create = (values, uid, {models: {Profiles, Assignments, Shifts}}) =>
   Profiles.first('uid', uid)
-  // .then(profile => Assignments.push({...values, profileKey: profile.$key}))
-  .then(profile => Assignments.push(values))
+  .then(() => Assignments.push(values))
   .then(ref =>
     updateCounts(values.shiftKey, {Assignments, Shifts})
-    .then(() => ref.key())
+    .then(() => ref.key()))
+
+const updateAssignmentStatus = (eKey, {getStuff, models}) =>
+  getStuff({
+    engagement: eKey,
+    assignment: eKey,
+  })
+  .then(({engagement,assignment}) =>
+    models.Commitments.by('oppKey', engagement.oppKey)
+    .then(commits =>
+      commits.find(propEq('code', 'shifts')))
+      .then(shiftCommit =>
+        shiftCommit ? parseInt(shiftCommit.count,10) : 0)
+      .then(assignReq =>
+        engagement.isAssigned ? assignReq === assignment.length : false)
+      .then(isAssigned =>
+        models.Engagements.child(eKey).update({isAssigned}))
   )
 
-const updateAssignmentStatus = (eKey, {Engagements, Commitments, Assignments}) =>
-  Promise.all([
-    Engagements.get(eKey),
-    Assignments.get(eKey),
-  ])
-  .then(([eng,assigns]) =>
-    Commitments.by('oppKey', eng.oppKey)
-      .then(commits => commits.find(c => c.code === 'shifts'))
-      .then(shiftCommit => shiftCommit ? parseInt(shiftCommit.count,10) : 0)
-      .then(assignReq => eng.isAssigned ? assignReq === assigns.length : false)
-      .then(isAssigned => Engagements.child(eKey).update({isAssigned}))
-  )
-
-const remove = (key, uid, {Profiles, Assignments, Shifts, Engagements, Commitments}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Assignments.get(key),
-  ])
-  .then(([user, {shiftKey, engagementKey}]) =>
-    Assignments.child(key).remove()
-    .then(() => updateCounts(shiftKey, {Assignments, Shifts}))
-    .then(() => updateAssignmentStatus(engagementKey, {Engagements, Commitments, Assignments}))
+const remove = (key, uid, {models, getStuff}) =>
+  getStuff(models)({
+    profile: {uid},
+    assignment: key,
+  })
+  .then(({assignment: {shiftKey, engagementKey}}) =>
+    models.Assignments.child(key).remove()
+    .then(() => updateCounts(shiftKey, models))
+    .then(() => updateAssignmentStatus(engagementKey, models))
     .then(() => key)
   )
 
-const update = ({key, values}, uid, {Assignments}) =>
-  Assignments.child(key).update(values).then(ref => key)
+const update = ({key, values}, uid, {models: {Assignments}}) =>
+  Assignments.child(key).update(values).then(always(key))
 
 export default {
   create,

@@ -1,40 +1,27 @@
 /* eslint max-nested-callbacks: 0 */
-import {isAdmin, isUser} from './authorization'
 import {getEmailInfo, sendEngagmentEmail} from './emails'
+import {always} from 'ramda'
 
-const create = (values, uid, {Profiles, Opps, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(values.projectKey),
-  ])
-  .then(([user, project]) =>
-    (isAdmin(user) || isUser(user, project.ownerProfileKey)) &&
-    Opps.push({...values,
-      ownerProfileKey: user.$key,
+const create = (values, uid, {auths, models}) =>
+  auths.userCanUpdateProject({uid, projectKey: values.projectKey})
+  .then(({profile}) =>
+    models.Opps.push({
+      ...values,
+      ownerProfileKey: profile.$key,
     }).key()
   )
 
-const remove = (key, uid, {Profiles, Opps, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Opps.get(key),
-  ])
-  .then(([user, opp]) =>
-    Projects.get(opp.projectKey).then(project => [user, opp, project])
-  )
-  .then(([user, opp, project]) =>
-    (isUser(user,opp.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user)) &&
-      Opps.child(key).remove() && key
-  )
+const remove = (key, uid, {auths, models}) =>
+  auths.userCanUpdateOpp({uid, oppKey: key})
+  .then(() => models.Opps.child(key).remove())
+  .then(always(key))
 
 function getAcceptedApplicants(Engagements, oppKey) {
   return Engagements.by('oppKey', oppKey)
     .then(engagements => engagements.filter(e => e.isAccepted))
 }
 
-function checkAndSendAcceptanceEmail(key, {confirmationsOn}, uid, opp, Engagements, Profiles, Opps, Projects) { // eslint-disable-line
+function checkAndSendAcceptanceEmail(key, {confirmationsOn}, uid, opp, {Engagements, Profiles, Opps, Projects}) { // eslint-disable-line
   // confirmations are being turned on
   if (confirmationsOn && !opp.hasOwnProperty(confirmationsOn)) {
     process.nextTick(() => {
@@ -53,24 +40,12 @@ function checkAndSendAcceptanceEmail(key, {confirmationsOn}, uid, opp, Engagemen
   return true
 }
 
-const update = ({key, values}, uid, {Profiles, Opps, Projects, Engagements}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Opps.get(key),
-  ])
-  .then(([user, opp]) =>
-    Projects.get(opp.projectKey).then(project => [user, opp, project])
-  )
-  .then(([user, opp, project]) => {
-    if (isUser(user,opp.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user))
-    {
-      Opps.child(key).update(values)
-      checkAndSendAcceptanceEmail(key, values, uid, opp, Engagements, Profiles, Opps, Projects)  // eslint-disable-line max-len
-    }
-    return key
-  })
+const update = ({key, values}, uid, {auths, models}) =>
+  auths.userCanUpdateOpp({uid, oppKey: key})
+  .then(({opp}) =>
+    models.Opps.child(key).update(values)
+      .then(() => checkAndSendAcceptanceEmail(key, values, uid, opp, models))
+      .then(always(key)))
 
 export default {
   create,

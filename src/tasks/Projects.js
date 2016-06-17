@@ -1,43 +1,17 @@
-import {isAdmin, isEAP, isUser} from './authorization'
+const create = (values, uid, {models, auths}) =>
+  auths.userCanCreateProject({uid})
+  .then(({profile}) => models.Projects.push({
+    ...values,
+    ownerProfileKey: profile.$key,
+  }).key())
 
-const create = (values, uid, {Profiles, Projects}) =>
-  Profiles.first('uid', uid)
-  .then(user => {
-    console.log('found user', user, isAdmin(user), isEAP(user))
-    return (isAdmin(user) || isEAP(user)) &&
-      Projects.push({...values,
-        ownerProfileKey: user.$key,
-      }).key()
-  })
+const remove = (key, uid, {models, auths}) =>
+  auths.userCanRemoveProject({uid, projectKey: key})
+  .then(() => models.Projects.child(key).remove() && key)
 
-// const create = (values, uid, {Profiles, Projects}) =>
-//   Profiles.by('uid', uid)
-//   .then(user =>
-//     (isAdmin(user) || isEAP(user)) &&
-//       Projects.push({...values,
-//         ownerProfileKey: user.$key,
-//       }).key()
-//   )
-
-const remove = (key, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) =>
-    isUser(profile, project.ownerProfileKey) &&
-      Projects.child(key).remove() && key
-  )
-
-const update = ({key, values}, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) =>
-    isUser(profile, project.ownerProfileKey) &&
-      Projects.child(key).update(values) && key
-  )
+const update = ({key, values}, uid, {models, auths}) =>
+  auths.userCanUpdateProject({uid, projectKey: key})
+  .then(() => models.Projects.child(key).update(values) && key)
 
 export default {
   create,

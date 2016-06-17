@@ -1,18 +1,7 @@
 import {isAdmin, isUser} from './authorization'
+import {cond, T, always} from 'ramda'
 
-// const create = (values, uid, {Profiles}) =>
-//   Profiles.first('uid', uid)
-//   .then(profile =>
-//     !profile ?
-//     Profiles.push({...values,
-//       uid,
-//       isAdmin: false,
-//       isEAP: false,
-//     }).key() :
-//     profile.$key
-//   )
-
-const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
+const makeUserAndProfile = (uid, values, {models: {Profiles, Users}}) => {
   const profileKey = Profiles.push({...values,
     uid,
     isAdmin: false,
@@ -22,7 +11,7 @@ const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
   return profileKey
 }
 
-const create = (values, uid, {Profiles, Users}) =>
+const create = (values, uid, {models: {Profiles, Users}}) =>
   Profiles.first('uid', uid)
   .then(profile => {
     console.log('profile',profile,values,uid)
@@ -31,15 +20,27 @@ const create = (values, uid, {Profiles, Users}) =>
       profile.$key
   })
 
-const update = ({key, values}, uid, {Profiles}) =>
+const adminUpdate = profile => (values, {models: {Profiles}}) =>
+  Profiles.child(profile.$key).update(values)
+
+const userUpdate = profile => (values, {models: {Profiles}}) =>
+  Profiles.child(profile.$key).update({
+    ...values,
+    isAdmin: profile.isAdmin,
+    isEAP: profile.isEAP,
+  })
+
+const update = ({key, values}, uid, {models: {Profiles}}) =>
   Profiles.first('uid', uid)
   .then(profile =>
-    isAdmin(profile) && Profiles.child(key).update(values) && key ||
-    isUser(profile,key) && Profiles.child(key).update({...values,
-      isAdmin: profile.isAdmin,
-      isEAP: profile.isAdmin,
-    }) && key
+    cond([
+      [isAdmin, adminUpdate],
+      [isUser, userUpdate],
+      [T, always(T)],
+    ])(profile, key)
   )
+  .then(fn => fn(values, {Profiles}))
+  .then(() => key)
 
 export default {
   create,
