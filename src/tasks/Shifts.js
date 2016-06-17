@@ -24,7 +24,7 @@ const update = ({key, values}, uid, {models, auths, getStuff}) =>
   })
   .then(({shift}) =>
     auths.userCanUpdateTeam({uid, teamKey: shift.teamKey}))
-  .then(() => models.Shifts.update(values))
+  .then(() => models.Shifts.child(key).update(values))
   .then(() => updateCounts(key, models))
   .then(always(key))
 
