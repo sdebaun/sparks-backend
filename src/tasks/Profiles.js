@@ -1,4 +1,4 @@
-import {isAdmin, isUser} from './authorization'
+import {isAdmin, isUser} from '../authorization'
 import {cond, T, always} from 'ramda'
 
 const makeUserAndProfile = (uid, values, {models: {Profiles, Users}}) => {
