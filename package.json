@@ -2,6 +2,9 @@
   "name": "sparks-backend",
   "version": "1.0.0",
   "description": "sparks backend",
+  "engines": {
+    "node": "6.1.0"
+  },
   "scripts": {
     "start": "babel-node src/index.js",
     "postinstall": "gulp build",
