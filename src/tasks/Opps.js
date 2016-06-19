@@ -1,54 +1,78 @@
 /* eslint max-nested-callbacks: 0 */
-import {getEmailInfo, sendEngagmentEmail} from './emails'
-import {always} from 'ramda'
+import Promise from 'bluebird'
 
-const create = (values, uid, {auths, models}) =>
-  auths.userCanUpdateProject({uid, projectKey: values.projectKey})
-  .then(({profile}) =>
-    models.Opps.push({
+function actions({auths: {userCanUpdateOpp, userCanUpdateProject}, models: {Engagements, Opps}}) { // eslint-disable-line
+  const act = Promise.promisify(this.act, {context: this})
+
+  const getAcceptedApplicants = oppKey =>
+    Engagements.by('oppKey', oppKey)
+    .then(engagements => engagements.filter(e => e.isAccepted))
+
+  const checkAndSendAcceptanceEmail = (key, {confirmationsOn}, uid, opp) => { // eslint-disable-line
+    // confirmations are being turned on
+    if (confirmationsOn && !opp.hasOwnProperty(confirmationsOn)) {
+      process.nextTick(() => {
+        getAcceptedApplicants(key)
+          .then(engagements => {
+            engagements.forEach(a => {
+              act({
+                role:'email',
+                cmd:'getInfo',
+                key,
+                profileKey: a.profileKey,
+                uid,
+                oppKey: key,
+              })
+              .then(info =>
+                act({
+                  role:'email',
+                  cmd:'send',
+                  email:'engagement',
+                  templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+                  subject: 'Application accepted for',
+                  ...info,
+                }))
+            })
+          })
+      })
+    }
+    return true
+  }
+
+  this.add({role:'Opps',cmd:'create'}, ({values, profile}, respond) => {
+    const key = Opps.push({
       ...values,
       ownerProfileKey: profile.$key,
     }).key()
-  )
 
-const remove = (key, uid, {auths, models}) =>
-  auths.userCanUpdateOpp({uid, oppKey: key})
-  .then(() => models.Opps.child(key).remove())
-  .then(always(key))
+    respond(null, {key})
+  })
 
-function getAcceptedApplicants(Engagements, oppKey) {
-  return Engagements.by('oppKey', oppKey)
-    .then(engagements => engagements.filter(e => e.isAccepted))
+  this.add({role:'Opps',cmd:'remove'}, ({key}, respond) =>
+    Opps.child(key).remove()
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Opps',cmd:'update'}, ({key, values, uid, opp}, respond) =>
+    console.log('opp update', values) ||
+    Opps.child(key).update(values)
+    .then(() => checkAndSendAcceptanceEmail(key, values, uid, opp))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.wrap({role:'Opps'}, function(msg, respond) {
+    if (msg.cmd === 'create') { return this.prior(msg, respond) }
+
+    userCanUpdateOpp({uid: msg.uid, oppKey: msg.key})
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
+
+  this.wrap({role:'Opps',cmd:'create'}, function(msg, respond) {
+    userCanUpdateProject({uid: msg.uid, projectKey: msg.values.projectKey})
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
 }
 
-function checkAndSendAcceptanceEmail(key, {confirmationsOn}, uid, opp, {Engagements, Profiles, Opps, Projects}) { // eslint-disable-line
-  // confirmations are being turned on
-  if (confirmationsOn && !opp.hasOwnProperty(confirmationsOn)) {
-    process.nextTick(() => {
-      getAcceptedApplicants(Engagements, key)
-        .then(engagements => {
-          engagements.forEach(a => {
-            getEmailInfo({key, profileKey: a.profileKey, uid, oppKey: key, Profiles, Opps, Projects}) // eslint-disable-line max-len
-            .then(info => sendEngagmentEmail(info, {
-              templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-              subject: 'Application accepted for',
-            }))
-          })
-        })
-    })
-  }
-  return true
-}
-
-const update = ({key, values}, uid, {auths, models}) =>
-  auths.userCanUpdateOpp({uid, oppKey: key})
-  .then(({opp}) =>
-    models.Opps.child(key).update(values)
-      .then(() => checkAndSendAcceptanceEmail(key, values, uid, opp, models))
-      .then(always(key)))
-
-export default {
-  create,
-  remove,
-  update,
-}
+export default actions

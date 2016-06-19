@@ -45,6 +45,7 @@ const modelFnFromSpec = (models, key, spec) => {
     models[Inflection.pluralize(modelKey)]
   const fn = arrayMode ? arrayModeFn : singleModeFn
 
+  console.log(`fetching ${key} using spec ${spec}`)
   return fn(model)(spec)
 }
 
