@@ -1,17 +1,18 @@
-/* eslint max-nested-callbacks: 0 */
+/* eslint max-nested-callbacks: 0, max-len:160 */
 import Promise from 'bluebird'
-import {prop} from 'ramda'
+import {prop, reduce, pathOr, flip, when, gt, always} from 'ramda'
 
 function actions({gateway, models}) {
   const {Assignments, Engagements, Opps, Commitments} = models
   const act = Promise.promisify(this.act, {context: this})
 
-  this.add({role:'Engagements',cmd:'create'}, ({values, uid}, respond) =>
+  this.add({role:'Engagements',cmd:'create'}, ({oppKey, profileKey, uid}, respond) =>
       gateway.generateClientToken()
       .then(({clientToken}) =>
         Promise.resolve(
           Engagements.push({
-            ...values,
+            oppKey,
+            profileKey,
             isApplied: true,
             isAccepted: false,
             isConfirmed: false,
@@ -23,9 +24,9 @@ function actions({gateway, models}) {
             role:'email',
             cmd:'getInfo',
             key,
-            profileKey: values.profileKey,
+            profileKey: profileKey,
             uid,
-            oppKey: values.oppKey,
+            oppKey: oppKey,
           })
           .then(info =>
             act({
@@ -110,7 +111,7 @@ function actions({gateway, models}) {
         }
         return engagement
       })
-      .then(({isAssigned, isPaid}) => isAssigned && isPaid)
+      .then(({isAssigned, isPaid}) => Boolean(isAssigned && isPaid))
       .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
       .then(() => respond(null, {key}))
       .catch(err => respond(err)))
@@ -150,6 +151,31 @@ function actions({gateway, models}) {
       })
     })
 
+  this.add({role:'Engagements',cmd:'confirmWithoutPay'}, ({key, uid}, respond) =>
+    Engagements.get(key)
+    .then(engagement =>
+      Commitments.by('oppKey', engagement.oppKey)
+      .then(reduce((acc, c) =>
+              acc + pathOr(0, ['payment', 'amount'], c) +
+                    pathOr(0, ['deposit', 'amount'], c),
+                    0))
+      .then(amount => {
+        if (amount > 0) {
+          console.log(amount)
+          return Promise.reject(`Cannot no pay, ${amount} due!`)
+        }
+      })
+      .then(() =>
+        Engagements.child(key).update({
+          isPaid: true,
+          isConfirmed: true,
+        }))
+      .then(() => act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement}))
+      .then(() => respond(null, {key}))
+    )
+    .catch(err => respond(err))
+  )
+
   this.add({role:'Engagements',cmd:'pay'}, ({key, values, uid}, respond) =>
     Engagements.get(key)
     .then(({oppKey}) => Commitments.by('oppKey', oppKey))
@@ -167,8 +193,8 @@ function actions({gateway, models}) {
     .tap(c => console.log('payment amounts found', c))
     .then(makePayment({key, values}))
     .then(() => Engagements.get(key))
-    .then(engagement => {
-      this.act({
+    .then(engagement =>
+      act({
         role:'Engagements',
         cmd:'sendEmail',
         email:'confirmed',
@@ -176,9 +202,8 @@ function actions({gateway, models}) {
         uid,
         engagement,
       }, err => err ? console.error(err) : null)
-
-      return key
-    })
+    )
+    .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
   this.add({role:'Engagements',cmd:'sendEmail',email:'confirmed'},

@@ -1,6 +1,9 @@
 function actions({models: {Memberships}, getStuff}) {
-  this.add({role:'Memberships',cmd:'create'}, ({values}, respond) => {
-    const key = Memberships.push({...values,
+  this.add({role:'Memberships',cmd:'create'}, ({teamKey, oppKey, engagementKey}, respond) => {
+    const key = Memberships.push({
+      teamKey,
+      oppKey,
+      engagementKey,
       isApplied: true,
       isAccepted: false,
       isConfirmed: false,
