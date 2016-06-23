@@ -1,46 +1,25 @@
-import {isAdmin, isEAP, isUser} from './authorization'
+function actions({auths: {userCanCreateProject, userCanRemoveProject, userCanUpdateProject}, models: {Projects}}) {
+  this.add({role:'Projects',cmd:'create'}, ({uid, values}, respond) =>
+    userCanCreateProject({uid})
+    .then(({profile}) =>
+      Projects.push({
+        ...values,
+        ownerProfileKey: profile.$key,
+      }).key())
+    .then(key => respond(null, {key}))
+    .catch(err => respond(err)))
 
-const create = (values, uid, {Profiles, Projects}) =>
-  Profiles.first('uid', uid)
-  .then(user => {
-    console.log('found user', user, isAdmin(user), isEAP(user))
-    return (isAdmin(user) || isEAP(user)) &&
-      Projects.push({...values,
-        ownerProfileKey: user.$key,
-      }).key()
-  })
+  this.add({role:'Projects',cmd:'remove'}, ({uid,key}, respond) =>
+    userCanRemoveProject({uid, projectKey: key})
+    .then(() => Projects.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-// const create = (values, uid, {Profiles, Projects}) =>
-//   Profiles.by('uid', uid)
-//   .then(user =>
-//     (isAdmin(user) || isEAP(user)) &&
-//       Projects.push({...values,
-//         ownerProfileKey: user.$key,
-//       }).key()
-//   )
-
-const remove = (key, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) =>
-    isUser(profile, project.ownerProfileKey) &&
-      Projects.child(key).remove() && key
-  )
-
-const update = ({key, values}, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) =>
-    isUser(profile, project.ownerProfileKey) &&
-      Projects.child(key).update(values) && key
-  )
-
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Projects',cmd:'update'}, ({uid, key, values}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+    .then(() => Projects.child(key).update(values))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions

@@ -1,47 +1,51 @@
-import {isAdmin, isUser} from './authorization'
+import {omit} from 'ramda'
 
-// const create = (values, uid, {Profiles}) =>
-//   Profiles.first('uid', uid)
-//   .then(profile =>
-//     !profile ?
-//     Profiles.push({...values,
-//       uid,
-//       isAdmin: false,
-//       isEAP: false,
-//     }).key() :
-//     profile.$key
-//   )
+function action({models: {Profiles, Users}, getStuff}) {
+  const makeUserAndProfile = (uid, values) => {
+    const profileKey = Profiles.push({...values,
+      uid,
+      isAdmin: false,
+      isEAP: false,
+    }).key()
 
-const makeUserAndProfile = (uid, values, {Profiles, Users}) => {
-  const profileKey = Profiles.push({...values,
-    uid,
-    isAdmin: false,
-    isEAP: false,
-  }).key()
-  Users.set(uid, profileKey)
-  return profileKey
+    return Users.set(uid, profileKey).then(() => profileKey)
+  }
+
+  this.add({role:'Profiles',cmd:'create'}, ({uid, values}, respond) =>
+    Profiles.first('uid', uid)
+    .then(profile =>
+      profile ? profile.$key : makeUserAndProfile(uid, values))
+    .then(key => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update',admin:true},
+          ({key, values}, respond) =>
+    Profiles.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update',admin:false},
+          ({key, values, uid}, respond) =>
+    getStuff({profile: {uid}})
+    .then(({profile}) =>
+      profile.$key === key ?
+      true :
+      Promise.reject('User cannot update the profile of another user'))
+    .then(() =>
+      Profiles.child(key).update(omit(['isAdmin', 'isEAP'], values)))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Profiles',cmd:'update'}, (msg, respond) =>
+    getStuff({profile: {uid: msg.uid}})
+    .then(({profile}) =>
+    this.act({
+      ...msg,
+      role:'Profiles',
+      cmd:'update',
+      admin:profile.isAdmin,
+    }, respond))
+    .catch(err => respond(err)))
 }
 
-const create = (values, uid, {Profiles, Users}) =>
-  Profiles.first('uid', uid)
-  .then(profile => {
-    console.log('profile',profile,values,uid)
-    return !profile ?
-      makeUserAndProfile(uid, values, {Profiles, Users}) :
-      profile.$key
-  })
-
-const update = ({key, values}, uid, {Profiles}) =>
-  Profiles.first('uid', uid)
-  .then(profile =>
-    isAdmin(profile) && Profiles.child(key).update(values) && key ||
-    isUser(profile,key) && Profiles.child(key).update({...values,
-      isAdmin: profile.isAdmin,
-      isEAP: profile.isAdmin,
-    }) && key
-  )
-
-export default {
-  create,
-  update,
-}
+export default action
