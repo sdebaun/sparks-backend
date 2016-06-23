@@ -52,6 +52,10 @@ function actions({getStuff, models}) {
     Assignments.child(key).update(values)
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
+
+  return {
+    name: 'Assignments',
+  }
 }
 
 export default actions

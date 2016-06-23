@@ -1,16 +1,8 @@
 import Promise from 'bluebird'
-import {prop} from 'ramda'
 
 function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
-  const {Shifts, Assignments} = models
+  const {Shifts} = models
   const act = Promise.promisify(this.act, {context: this})
-
-  this.add({role:'Shifts',cmd:'updateCounts'}, ({key}, respond) =>
-    Assignments.by('shiftKey', key)
-      .then(prop('length'))
-      .then(assigned => Shifts.child(key).update({assigned})
-        .then(() => respond(null, {assigned})))
-      .catch(err => respond(err)))
 
   this.add({role:'Shifts',cmd:'create'}, ({values, profile}, respond) => {
     const key = Shifts.push({
@@ -59,6 +51,22 @@ function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
     .then(data => this.prior({...msg, ...data}, respond))
     .catch(err => respond(err))
   })
+
+  this.add({role:'Shifts',cmd:'updateCounts'}, ({key}, respond) =>
+    getStuff({
+      assignments: {shiftKey: key},
+      shift: key,
+    })
+    .then(({assignments}) => assignments.length)
+    .then(assigned => Shifts.child(key).update({assigned})
+      .then(() => respond(null, {assigned}))
+    )
+    .catch(err => respond(null, {err}))
+  )
+
+  return {
+    name: 'Shifts',
+  }
 }
 
 export default actions
