@@ -26,7 +26,7 @@ export const makeQueue = (ref, responses = 'responses') => {
   const tasks$ = new Subject()
   const responseRef = ref.child(responses)
 
-  const fbQ = new FirebaseQueue(ref, (data,progress,resolve,reject)=>{
+  const fbQ = new FirebaseQueue(ref, (data,progress,resolve,reject) => {
     console.log('task received',data)
     tasks$.onNext(data)
     resolve()

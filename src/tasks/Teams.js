@@ -1,56 +1,42 @@
-import {isAdmin, isUser} from './authorization'
-
-const create = (values, uid, {Profiles, Teams, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(values.projectKey),
-  ])
-  .then(([user, project]) =>
-    (isAdmin(user) || isUser(user, project.ownerProfileKey)) &&
-    Teams.push({...values,
-      ownerProfileKey: user.$key,
+function actions({auths: {userCanUpdateTeam, userCanUpdateProject}, models: {Teams}}) { // eslint-disable-line
+  this.add({role:'Teams',cmd:'create'}, ({values, profile}, respond) => {
+    const key = Teams.push({
+      ...values,
+      ownerProfileKey: profile.$key,
     }).key()
-  )
-  // .then(([user, project]) => {
-  //   console.log('New Team', user, isAdmin(user), isUser(user, project.ownerProfileKey))
-  //   return (isAdmin(user) || isUser(user, project.ownerProfileKey)) &&
-  //   Teams.push({...values,
-  //     ownerProfileKey: user.$key,
-  //   }).key()
-  // })
 
-const remove = (key, uid, {Profiles, Teams, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Teams.get(key),
-  ])
-  .then(([user, team]) =>
-    Projects.get(team.projectKey).then(project => [user, team, project])
-  )
-  .then(([user, team, project]) =>
-    (isUser(user,team.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user)) &&
-      Teams.child(key).remove() && key
-  )
+    respond(null, {key})
+  })
 
-const update = ({key, values}, uid, {Profiles, Teams, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Teams.get(key),
-  ])
-  .then(([user, team]) =>
-    Projects.get(team.projectKey).then(project => [user, team, project])
-  )
-  .then(([user, team, project]) =>
-    (isUser(user,team.ownerProfileKey) ||
-         isUser(user,project.ownerProfileKey) ||
-         isAdmin(user)) &&
-      Teams.child(key).update(values) && key
-  )
+  this.add({role:'Teams',cmd:'remove'}, ({key}, respond) =>
+    Teams.child(key).remove()
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Teams',cmd:'update'}, ({key, values}, respond) =>
+    Teams.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.wrap({role:'Teams'}, function(msg, respond) {
+    if (msg.cmd === 'create') { return this.prior(msg, respond) }
+
+    userCanUpdateTeam({
+      uid: msg.uid,
+      teamKey: msg.key,
+    })
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
+
+  this.wrap({role:'Teams',cmd:'create'}, function(msg, respond) {
+    userCanUpdateProject({
+      uid: msg.uid,
+      projectKey: msg.values.projectKey,
+    })
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
 }
+
+export default actions

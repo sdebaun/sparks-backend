@@ -1,29 +1,15 @@
-import {isAdmin, isUser} from './authorization'
+function actions({auths: {userCanUpdateProject}, models: {ProjectImages}}) {
+  this.add({role:'ProjectImages',cmd:'set'}, ({uid, key, values}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+      .then(() => ProjectImages.child(key).set(values))
+      .then(() => respond(null, {key}))
+      .catch(err => respond(err)))
 
-const canChange = (profile, project) =>
-  isAdmin(profile) || isUser(profile, project.ownerProfileKey)
-
-const profileAndProject = (key, uid, {Profiles, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Projects.get(key),
-  ])
-  .then(([profile,project]) => {
-    if (!canChange(profile, project)) {
-      throw new Error('Unauthorized')
-    }
-  })
-
-const set = ({key, values}, uid, {Profiles, Projects, ProjectImages}) =>
-  profileAndProject(key, uid, {Profiles, Projects})
-  .then(() => ProjectImages.child(key).set(values))
-  .then(() => key)
-
-const remove = (key, uid, {Profiles, Projects, ProjectImages}) =>
-  profileAndProject(key, uid, {Profiles, Projects})
-  .then(() => ProjectImages.child(key).remove())
-
-export default {
-  set,
-  remove,
+  this.add({role:'ProjectImages',cmd:'remove'}, ({uid, key}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+    .then(() => ProjectImages.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions
