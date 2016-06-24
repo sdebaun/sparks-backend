@@ -1,4 +1,8 @@
-function actions({getStuff, models: {Commitments}}) {
+import Promise from 'bluebird'
+
+function actions({models: {Commitments}}) {
+  const act = Promise.promisify(this.act, {context: this})
+
   this.add({role:'Commitments',cmd:'create'}, ({values, uid}, respond) => {
     console.log('create commitment', values)
     const key = Commitments.push(values).key()
@@ -6,7 +10,7 @@ function actions({getStuff, models: {Commitments}}) {
   })
 
   this.add({role:'Commitments',cmd:'remove'}, ({key, uid}, respond) =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       profile: {uid},
       commitment: key,
     })

@@ -4,39 +4,75 @@ import {when, compose, equals, keys, prop} from 'ramda'
 
 const log = (...m) => console.log(...m)
 
+const objectOrKey = when(
+  compose(
+    equals(['key']),
+    keys
+  ),
+  prop('key')
+)
+
 const buildResponse = (domain, event, payload) => ({
   domain, event, payload: payload || false,
 })
 
 export const startDispatch = (ref, seneca) => {
-  const act = Promise.promisify(seneca.act, {context: seneca})
-
   const respond = (uid, response) => {
     log('responding with', response)
     ref.child('responses').child(uid).push(response)
   }
 
-  const handle = ({domain, action, uid, payload}, progress, resolve) => {
-    console.log('Acting on', {
-      role: domain,
-      cmd: action,
-      uid,
-    })
-
-    act({
+  async function handle({domain, action, uid, payload}) {
+    const pattern = {
       role: domain,
       cmd: action,
       uid,
       ...payload,
-    })
-    // Seneca requires that all responses are either arrays or objects.
-    // Previously we just returned keys, so where we return an object with only
-    // a key this converts back to a string.
-    .then(when(compose(equals(['key']), keys), prop('key')))
-    .then(result => respond(uid, buildResponse(domain, action, result)))
-    .catch(err => log('queue error', err, domain, action, uid, payload))
-    .then(resolve)
+    }
+
+    console.log('Auth', pattern)
+
+    try {
+      const auth = await seneca.act({
+        ...pattern,
+        role: 'Auth',
+        model: pattern.role,
+      })
+
+      if (auth.reject) {
+        log('queue unauthorized',
+          auth.reject, domain, action, uid, payload)
+        return {reject: auth.reject}
+      }
+
+      log('auth successful')
+      log('acting with', {
+        ...pattern,
+        ...auth,
+      })
+
+      try {
+        const response = await seneca.act({
+          ...pattern,
+          ...auth,
+        })
+
+        respond(
+          uid,
+          buildResponse(domain, action, objectOrKey(response))
+        )
+      } catch (err) {
+        log('queue error', err, domain, action, uid, payload)
+      }
+    } catch (authErr) {
+      log('queue error', authErr, domain, action, uid, payload)
+      return {error: authErr.toString()}
+    }
   }
 
-  return new FirebaseQueue(ref, handle)
+  return new FirebaseQueue(ref, function(data, progress, resolve, reject) { // eslint-disable-line max-params, max-len
+    handle(data)
+      .then(resolve)
+      .catch(reject)
+  })
 }

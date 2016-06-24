@@ -1,12 +1,29 @@
 import Promise from 'bluebird'
+import moment from 'moment-timezone'
+import {join, tap} from 'ramda'
 
-function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
+function actions({models}) {
   const {Shifts} = models
   const act = Promise.promisify(this.act, {context: this})
 
+  const shiftTimes = values => {
+    const date = moment(join('', [values.date, 'T', '00:00:00Z'])).tz('utc')
+    const start = date.clone().add(values.start, 'hours')
+    const end = start.clone().add(values.hours, 'hours')
+
+    return tap(c => console.log(c), {
+      ...values,
+      date: date.format('YYYY-MM-DD'),
+      startTime: start.format(),
+      endTime: end.format(),
+      start: moment.duration(start.diff(date)).asHours(),
+      end: moment.duration(end.diff(date)).asHours(),
+    })
+  }
+
   this.add({role:'Shifts',cmd:'create'}, ({values, profile}, respond) => {
     const key = Shifts.push({
-      ...values,
+      ...shiftTimes(values),
       ownerProfileKey: profile.$key,
     }).key()
 
@@ -19,7 +36,7 @@ function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
     .catch(err => respond(err)))
 
   this.add({role:'Shifts',cmd:'update'}, ({key, values}, respond) =>
-    Shifts.child(key).update(values)
+    Shifts.child(key).update(shiftTimes(values))
     .then(() => act({
       role:'Shifts',
       cmd:'updateCounts',
@@ -32,32 +49,8 @@ function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
     }))
   )
 
-  this.wrap({role:'Shifts'}, function(msg, respond) {
-    if (msg.cmd === 'create') { return this.prior(msg, respond) }
-
-    return getStuff({
-      shift: msg.key,
-    })
-    .then(({shift}) =>
-      userCanUpdateTeam({
-        uid: msg.uid,
-        teamKey: shift.teamKey,
-      }))
-    .then(data => this.prior({...msg, ...data}, respond))
-    .catch(err => respond(err))
-  })
-
-  this.wrap({role:'Shifts',cmd:'create'}, function(msg, respond) {
-    userCanUpdateTeam({
-      uid: msg.uid,
-      teamKey: msg.values.teamKey,
-    })
-    .then(data => this.prior({...msg, ...data}, respond))
-    .catch(err => respond(err))
-  })
-
   this.add({role:'Shifts',cmd:'updateCounts'}, ({key}, respond) =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       assignments: {shiftKey: key},
       shift: key,
     })

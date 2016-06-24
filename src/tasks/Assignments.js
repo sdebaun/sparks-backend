@@ -1,7 +1,7 @@
 import Promise from 'bluebird'
 import {propEq, prop, identity, ifElse} from 'ramda'
 
-function actions({getStuff, models}) {
+function actions({models}) {
   const {Profiles, Assignments} = models
   const act = Promise.promisify(this.act, {context: this})
 
@@ -15,7 +15,7 @@ function actions({getStuff, models}) {
     .catch(err => respond(err)))
 
   const updateAssignmentStatus = eKey =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       engagement: eKey,
       assignment: eKey,
     })
@@ -32,7 +32,7 @@ function actions({getStuff, models}) {
     )
 
   this.add({role:'Assignments',cmd:'remove'}, ({key, uid}, respond) =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       assignment: key,
     })
     .then(({assignment}) =>

@@ -1,7 +1,7 @@
 /* eslint max-nested-callbacks: 0 */
 import Promise from 'bluebird'
 
-function actions({auths: {userCanUpdateOpp, userCanUpdateProject}, models: {Engagements, Opps}}) { // eslint-disable-line
+function actions({models: {Engagements, Opps}}) { // eslint-disable-line
   const act = Promise.promisify(this.act, {context: this})
 
   const getAcceptedApplicants = oppKey =>
@@ -60,18 +60,10 @@ function actions({auths: {userCanUpdateOpp, userCanUpdateProject}, models: {Enga
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
-  this.wrap({role:'Opps'}, function(msg, respond) {
-    if (msg.cmd === 'create') { return this.prior(msg, respond) }
-
-    userCanUpdateOpp({uid: msg.uid, oppKey: msg.key})
-    .then(data => this.prior({...msg, ...data}, respond))
-    .catch(err => respond(err))
-  })
-
-  this.wrap({role:'Opps',cmd:'create'}, function(msg, respond) {
-    userCanUpdateProject({uid: msg.uid, projectKey: msg.values.projectKey})
-    .then(data => this.prior({...msg, ...data}, respond))
-    .catch(err => respond(err))
+  this.add({role:'Auth',cmd:'create',model:'Opps'}, function(msg, respond) {
+    this.act({
+      ...msg,role:'Auth',cmd:'update',model:'Projects',
+      projectKey: msg.values.projectKey}, respond)
   })
 }
 

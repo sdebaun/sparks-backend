@@ -1,11 +1,14 @@
 import Promise from 'bluebird'
 import {pathOr, ifElse} from 'ramda'
 
-function actions({getStuff, models: {Fulfillers}, auths: {userCanUpdateOpp}}) {
+function actions({models: {Fulfillers}}) {
+  const seneca = this
+  const act = Promise.promisify(this.act, {context: this})
+
   const getOppKey = ifElse(
     pathOr(false, ['values', 'oppKey']),
     msg => Promise.resolve(msg.values.oppKey),
-    msg => getStuff({fulfiller: msg.key})
+    msg => act({role:'Firebase',cmd:'get',fulfiller: msg.key})
       .then(({fulfiller}) => fulfiller.oppKey)
   )
 
@@ -15,7 +18,7 @@ function actions({getStuff, models: {Fulfillers}, auths: {userCanUpdateOpp}}) {
   })
 
   this.add({role:'Fulfillers',cmd:'remove'}, ({uid, key}, respond) =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       profile: {uid},
       fulfiller: key,
     })
@@ -28,11 +31,11 @@ function actions({getStuff, models: {Fulfillers}, auths: {userCanUpdateOpp}}) {
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
-  this.wrap({role:'Fulfillers'}, function(msg, respond) {
+  this.add({role:'Auth',model:'Fulfillers'}, function(msg, respond) {
     getOppKey(msg)
-    .then(oppKey => userCanUpdateOpp({uid: msg.uid, oppKey}))
-    .then(data => this.prior({...msg, ...data}, respond))
-    .catch(err => respond(err))
+    .then(oppKey =>
+      seneca.act({...msg,oppKey,role:'Auth',model:'Opps',cmd:'update'},
+        respond))
   })
 }
 

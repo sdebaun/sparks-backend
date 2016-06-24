@@ -1,12 +1,15 @@
+import Promise from 'bluebird'
 import SendGrid from 'sendgrid'
 
 const sendgrid = SendGrid(process.env.SENDGRID_KEY)
 const DOMAIN = process.env.DOMAIN
 
-function actions({getStuff, models: {Projects}}) {
+function actions({models: {Projects}}) {
+  const act = Promise.promisify(this.act, {context: this})
+
   this.add({role:'email',cmd:'getInfo'},
           ({key, oppKey, profileKey, uid}, respond) =>
-    getStuff({
+    act({role:'Firebase',cmd:'get',
       profile: profileKey,
       opp: oppKey,
     }).then(({profile, opp}) =>

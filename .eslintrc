@@ -11,6 +11,8 @@
     "no-unused-vars": 1,
     "key-spacing": 0,
     "max-nested-callbacks": [2, 3],
-    "func-names": 0
+    "func-names": 0,
+    "no-shadow": 0,
+    "max-line": 100
   }
 }

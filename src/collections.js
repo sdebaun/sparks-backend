@@ -11,13 +11,11 @@ const firstByChildKey = root => (field, key) =>
   byChildKey(root)(field,key)
   .then(rows => rows.length > 0 && rows[0])
 
-// const byChildKey = root => (field, key) =>
-//   root.orderByChild(field).equalTo(key).once('value')
-//   .then(snap => snap.val())
-
-const byKey = root => key =>
-  root.child(key).once('value')
-  .then(snap => ({$key: key, ...snap.val()}))
+const byKey = root => key => {
+  console.log(`Looking up ${root.key()} ${key}`)
+  return root.child(key).once('value')
+    .then(snap => ({$key: key, ...snap.val()}))
+}
 
 const createCollectionObject = (fb, name) => {
   const root = fb.child(name)
