@@ -17,6 +17,12 @@ export const startDispatch = (ref, seneca) => {
   }
 
   const handle = ({domain, action, uid, payload}, progress, resolve) => {
+    console.log('Acting on', {
+      role: domain,
+      cmd: action,
+      uid,
+    })
+
     act({
       role: domain,
       cmd: action,

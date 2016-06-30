@@ -57,7 +57,11 @@ fb.authWithCustomToken(cfg.FIREBASE_TOKEN.trim(), err => {
 
   console.log('FB Authed successfully')
 
-  const seneca = Seneca()
+  const seneca = Seneca({
+    debug: {
+      undead: true ,
+    },
+  })
 
   const models = makeCollections(fb, [
     'Arrivals',
