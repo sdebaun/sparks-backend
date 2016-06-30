@@ -11,4 +11,4 @@ deployment:
   production:
     branch: master
     heroku:
-      appname: sparks-backend-master
+      appname: sparks-backend-production
