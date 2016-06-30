@@ -1,5 +1,5 @@
 import Promise from 'bluebird'
-import {propEq} from 'ramda'
+import {propEq, prop, identity, ifElse} from 'ramda'
 
 function actions({getStuff, models}) {
   const {Profiles, Assignments} = models
@@ -33,18 +33,24 @@ function actions({getStuff, models}) {
 
   this.add({role:'Assignments',cmd:'remove'}, ({key, uid}, respond) =>
     getStuff({
-      profile: {uid},
       assignment: key,
     })
-    .then(({assignment: {shiftKey, engagementKey}}) =>
-      models.Assignments.child(key).remove()
-      .then(() => act({
-        role:'Shifts',
-        cmd:'updateCounts',
-        key:shiftKey,
-      }))
-      .then(() => updateAssignmentStatus(engagementKey))
+    .then(({assignment}) =>
+      models.Assignments.child(key).remove().then(assignment)
     )
+    .then(
+      ifElse(
+        prop('shiftKey'),
+        assignment =>
+          act({
+            role:'Shifts',
+            cmd:'updateCounts',
+            key:assignment.shiftKey,
+          }).then(assignment),
+        identity
+      )
+    )
+    .then(assignment => updateAssignmentStatus(assignment.engagementKey))
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
