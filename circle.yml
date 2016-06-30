@@ -7,3 +7,8 @@ deployment:
     branch: release
     heroku:
       appname: sparks-backend-staging
+
+  production:
+    branch: master
+    heroku:
+      appname: sparks-backend-master
