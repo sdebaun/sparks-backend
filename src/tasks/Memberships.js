@@ -1,26 +1,30 @@
-import {isAdmin, isUser} from './authorization'
+function actions({models: {Memberships}, getStuff}) {
+  this.add({role:'Memberships',cmd:'create'}, ({teamKey, oppKey, engagementKey}, respond) => {
+    const key = Memberships.push({
+      teamKey,
+      oppKey,
+      engagementKey,
+      isApplied: true,
+      isAccepted: false,
+      isConfirmed: false,
+    }).key()
 
-const create = (values, uid, {Profiles, Memberships, Projects}) =>
-  Memberships.push({...values,
-    isApplied: true,
-    isAccepted: false,
-    isConfirmed: false,      
-  }).then(ref => ref.key())
+    respond(null, {key})
+  })
 
-const remove = (key, uid, {Profiles, Memberships, Projects}) =>
-  Promise.all([
-    Profiles.first('uid', uid),
-    Memberships.get(key),
-  ])
-  .then(([user, fulfiller]) =>
-    Memberships.child(key).remove() && key
-  )
+  this.add({role:'Memberships',cmd:'remove'}, ({key, uid}, respond) =>
+    getStuff({
+      profile: {uid},
+      membership: key,
+    })
+    .then(() => Memberships.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-const update = ({key, values}, uid, {Memberships}) =>
-  Memberships.child(key).update(values).then(ref => key)
-
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Memberships',cmd:'update'}, ({key, values}, respond) =>
+    Memberships.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions

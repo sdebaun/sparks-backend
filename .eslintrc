@@ -9,5 +9,8 @@
     "quotes": [2, "single"],
     "no-class/no-class": 0,
     "no-unused-vars": 1,
+    "key-spacing": 0,
+    "max-nested-callbacks": [2, 3],
+    "func-names": 0
   }
 }
