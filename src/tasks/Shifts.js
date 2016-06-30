@@ -26,7 +26,11 @@ function actions({auths: {userCanUpdateTeam}, models, getStuff}) {
       key:key,
     }))
     .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+    .catch(err => respond(null, {
+      msg: 'Could not update shifts',
+      err,
+    }))
+  )
 
   this.wrap({role:'Shifts'}, function(msg, respond) {
     if (msg.cmd === 'create') { return this.prior(msg, respond) }
