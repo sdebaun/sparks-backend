@@ -1,6 +1,6 @@
 /* eslint max-nested-callbacks: 0, max-len:160 */
 import Promise from 'bluebird'
-import {prop, reduce, pathOr, flip, when, gt, always} from 'ramda'
+import {prop, reduce, pathOr, flip, when, gt, always, tap} from 'ramda'
 
 function actions({gateway, models}) {
   const {Assignments, Engagements, Opps, Commitments} = models
@@ -132,7 +132,7 @@ function actions({gateway, models}) {
       // verifyCard: true,
       submitForSettlement: true,
     })
-    .tap(result => console.log('braintree result:', result.success, result.transaction.status)) // eslint-disable-line max-len
+    .then(tap(result => console.log('braintree result:', result.success, result.transaction.status))) // eslint-disable-line max-len
     .then(({success, transaction}) =>
       Engagements.child(key).update({
         transaction,
@@ -190,7 +190,7 @@ function actions({gateway, models}) {
     .then(c =>
       calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
     )
-    .tap(c => console.log('payment amounts found', c))
+    .then(tap(c => console.log('payment amounts found', c)))
     .then(makePayment({key, values}))
     .then(() => Engagements.get(key))
     .then(engagement =>
