@@ -36,7 +36,7 @@ function actions({getStuff, models}) {
       assignment: key,
     })
     .then(({assignment}) =>
-      models.Assignments.child(key).remove().then(assignment)
+      models.Assignments.child(key).remove().then(() => assignment)
     )
     .then(
       ifElse(
@@ -46,7 +46,7 @@ function actions({getStuff, models}) {
             role:'Shifts',
             cmd:'updateCounts',
             key:assignment.shiftKey,
-          }).then(assignment),
+          }).then(() => assignment),
         identity
       )
     )
