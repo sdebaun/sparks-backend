@@ -1,24 +1,30 @@
-const create = (values, uid, {models: {Memberships}}) =>
-  Memberships.push({...values,
-    isApplied: true,
-    isAccepted: false,
-    isConfirmed: false,
-  }).then(ref => ref.key())
+function actions({models: {Memberships}, getStuff}) {
+  this.add({role:'Memberships',cmd:'create'}, ({teamKey, oppKey, engagementKey}, respond) => {
+    const key = Memberships.push({
+      teamKey,
+      oppKey,
+      engagementKey,
+      isApplied: true,
+      isAccepted: false,
+      isConfirmed: false,
+    }).key()
 
-const remove = (key, uid, {getStuff, models: {Memberships}}) =>
-  getStuff({
-    profile: {uid},
-    membership: key,
+    respond(null, {key})
   })
-  .then(() =>
-    Memberships.child(key).remove() && key
-  )
 
-const update = ({key, values}, uid, {models: {Memberships}}) =>
-  Memberships.child(key).update(values).then(() => key)
+  this.add({role:'Memberships',cmd:'remove'}, ({key, uid}, respond) =>
+    getStuff({
+      profile: {uid},
+      membership: key,
+    })
+    .then(() => Memberships.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Memberships',cmd:'update'}, ({key, values}, respond) =>
+    Memberships.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions

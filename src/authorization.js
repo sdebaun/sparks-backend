@@ -71,9 +71,7 @@ const removeProjectRules = [
 const updateTeamRules = append(profileIsTeamOwner, updateProjectRules)
 const updateOppRules = append(profileIsOppOwner, updateProjectRules)
 
-const authorizations = (models, injectedGetStuff) => {
-  const getStuff = injectedGetStuff(models)
-
+const authorizations = (models, getStuff) => {
 // Each of these will return a promise that rejects if the authentication rules
 // fail, otherwise will resolve with an object containing anything it loaded.
 

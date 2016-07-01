@@ -14,7 +14,7 @@ let organizers = [
   },
 ]
 
-const myGetStuff = models => spec => {
+const myGetStuff = spec => {
   return Promise.resolve({
     profile,
     project,

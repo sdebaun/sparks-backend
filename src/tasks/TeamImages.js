@@ -1,12 +1,15 @@
-const set = ({key, values}, uid, {models, auths, getStuff}) =>
-  getStuff({
-    team: key,
+function actions({auths: {userCanUpdateProject}, models: {TeamImages}, getStuff}) {
+  this.add({role:'TeamImages',cmd:'set'}, ({key, uid, values}, respond) => {
+    getStuff({
+      team: key,
+    })
+    .then(({team}) =>
+      userCanUpdateProject({uid, projectKey: team.projectKey}))
+    .then(() =>
+      TeamImages.child(key).set(values))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err))
   })
-  .then(({team}) =>
-    auths.userCanUpdateProject({uid, projectKey: team.projectKey}))
-  .then(() =>
-    models.TeamImages.child(key).set(values) && key)
-
-export default {
-  set,
 }
+
+export default actions

@@ -1,20 +1,25 @@
-const create = (values, uid, {models, auths}) =>
-  auths.userCanCreateProject({uid})
-  .then(({profile}) => models.Projects.push({
-    ...values,
-    ownerProfileKey: profile.$key,
-  }).key())
+function actions({auths: {userCanCreateProject, userCanRemoveProject, userCanUpdateProject}, models: {Projects}}) {
+  this.add({role:'Projects',cmd:'create'}, ({uid, values}, respond) =>
+    userCanCreateProject({uid})
+    .then(({profile}) =>
+      Projects.push({
+        ...values,
+        ownerProfileKey: profile.$key,
+      }).key())
+    .then(key => respond(null, {key}))
+    .catch(err => respond(err)))
 
-const remove = (key, uid, {models, auths}) =>
-  auths.userCanRemoveProject({uid, projectKey: key})
-  .then(() => models.Projects.child(key).remove() && key)
+  this.add({role:'Projects',cmd:'remove'}, ({uid,key}, respond) =>
+    userCanRemoveProject({uid, projectKey: key})
+    .then(() => Projects.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-const update = ({key, values}, uid, {models, auths}) =>
-  auths.userCanUpdateProject({uid, projectKey: key})
-  .then(() => models.Projects.child(key).update(values) && key)
-
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Projects',cmd:'update'}, ({uid, key, values}, respond) =>
+    userCanUpdateProject({uid, projectKey: key})
+    .then(() => Projects.child(key).update(values))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions

@@ -1,25 +1,42 @@
-import {always} from 'ramda'
-
-const create = (values, uid, {models, auths}) =>
-  auths.userCanUpdateProject({uid, projectKey: values.projectKey}, models)
-  .then(({profile}) =>
-    models.Teams.push({
+function actions({auths: {userCanUpdateTeam, userCanUpdateProject}, models: {Teams}}) { // eslint-disable-line
+  this.add({role:'Teams',cmd:'create'}, ({values, profile}, respond) => {
+    const key = Teams.push({
       ...values,
       ownerProfileKey: profile.$key,
-    }).key())
+    }).key()
 
-const remove = (key, uid, {models, auths}) =>
-  auths.userCanUpdateTeam({uid, teamKey: key}, models)
-  .then(() => models.Teams.child(key).remove())
-  .then(always(key))
+    respond(null, {key})
+  })
 
-const update = ({key, values}, uid, {models, auths}) =>
-  auths.userCanUpdateTeam({uid, teamKey: key}, models)
-  .then(() => models.Teams.child(key).update(values))
-  .then(always(key))
+  this.add({role:'Teams',cmd:'remove'}, ({key}, respond) =>
+    Teams.child(key).remove()
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-export default {
-  create,
-  remove,
-  update,
+  this.add({role:'Teams',cmd:'update'}, ({key, values}, respond) =>
+    Teams.child(key).update(values)
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.wrap({role:'Teams'}, function(msg, respond) {
+    if (msg.cmd === 'create') { return this.prior(msg, respond) }
+
+    userCanUpdateTeam({
+      uid: msg.uid,
+      teamKey: msg.key,
+    })
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
+
+  this.wrap({role:'Teams',cmd:'create'}, function(msg, respond) {
+    userCanUpdateProject({
+      uid: msg.uid,
+      projectKey: msg.values.projectKey,
+    })
+    .then(data => this.prior({...msg, ...data}, respond))
+    .catch(err => respond(err))
+  })
 }
+
+export default actions

@@ -1,100 +1,130 @@
-/* eslint max-nested-callbacks: 0 */
-require('prfun/smash')
-import {getEmailInfo, sendEngagmentEmail} from './emails'
+/* eslint max-nested-callbacks: 0, max-len:160 */
+import Promise from 'bluebird'
+import {prop, reduce, pathOr, flip, when, gt, always, tap} from 'ramda'
 
-const create =
-  (values, uid, {gateway, models: {Profiles, Engagements, Opps, Projects}}) =>
-    gateway.generateClientToken()
-    .then(({clientToken}) =>
-      Engagements.push({...values,
-        isApplied: true,
-        isAccepted: false,
-        isConfirmed: false,
-        paymentClientToken: clientToken,
-      }).then(ref => ref.key())
-        .then(key =>
-          getEmailInfo({key, profileKey: values.profileKey, uid, oppKey: values.oppKey, Profiles, Opps, Projects}) // eslint-disable-line max-len
-          .then(info => sendEngagmentEmail(info, {
-            templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
-            subject: 'New Engagement for',
+function actions({gateway, models}) {
+  const {Assignments, Engagements, Opps, Commitments} = models
+  const act = Promise.promisify(this.act, {context: this})
+
+  this.add({role:'Engagements',cmd:'create'}, ({oppKey, profileKey, uid}, respond) =>
+      gateway.generateClientToken()
+      .then(({clientToken}) =>
+        Promise.resolve(
+          Engagements.push({
+            oppKey,
+            profileKey,
+            isApplied: true,
+            isAccepted: false,
+            isConfirmed: false,
+            paymentClientToken: clientToken,
           }))
+        .then(ref => ref.key())
+        .then(key =>
+          act({
+            role:'email',
+            cmd:'getInfo',
+            key,
+            profileKey: profileKey,
+            uid,
+            oppKey: oppKey,
+          })
+          .then(info =>
+            act({
+              role:'email',
+              cmd:'send',
+              email:'engagement',
+              templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
+              subject:'New Engagement for',
+              ...info,
+            })
+          )
           .then(() => key)
         )
+      )
+      .then(key => respond(null, {key}))
+      .catch(err => respond(err)))
+
+  const removeAssignments = keys => Promise.all(keys.map(key =>
+    Assignments.child(key).remove()))
+  const updateShiftCounts = keys => Promise.all(keys.map(key =>
+    act({
+      role:'Shifts',
+      cmd:'updateCounts',
+      key,
+    })))
+
+  this.add({role:'Engagements',cmd:'remove'}, ({key, uid}, respond) =>
+    Assignments.by('engagementKey', key)
+    .then(engs => Promise.all(engs.map(({$key}) => Assignments.get($key))))
+    .then(assigns =>
+      removeAssignments(assigns.map(prop('$key')))
+        .then(() => updateShiftCounts(assigns.map(prop('shiftKey'))))
     )
+    .then(() => Engagements.child(key).remove())
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 
-import {updateCounts} from './Assignments'
+  const OppConfirmationsOn = oppKey =>
+    Opps.get(oppKey)
+      .then(opp => opp.confirmationsOn || false)
 
-const remove = (key, uid, {models: {Assignments, Engagements, Shifts}}) =>
-  Assignments.by('engagementKey', key)
-  .then(engs => Promise.all(engs.map(({$key}) => Assignments.get($key))))
-  .then(assigns =>
-    Promise.all(assigns.map(({$key}) => Assignments.child($key).remove()))
-    .then(Promise.all(assigns.map(({shiftKey}) =>
-      updateCounts(shiftKey, {Assignments, Shifts})
-    )))
-  )
-  .then(() => Engagements.child(key).remove())
-  .then(() => key)
-
-function OppConfirmationsOn(Opps, oppKey) {
-  return Opps.get(oppKey)
-    .then(opp => opp.confirmationsOn || false)
-}
-
-const update = ({key, values}, uid, {models: {Engagements, Profiles, Opps, Projects}}) => { //eslint-disable-line max-len
-  // const isConfirmed = !!(values.isAssigned && values.isPaid)
-
-  // Engagements.child(key).update({...values, isConfirmed}).then(ref => key)
-  Engagements.child(key).update(values)
-    .then(() => Engagements.get(key))
-    .then(engagment => {
-      if (values.isAccepted) {
-        return getEmailInfo({key, profileKey: engagment.profileKey, oppKey: engagment.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
-          .then(info => Promise.all([
-            OppConfirmationsOn(Opps, engagment.oppKey),
-            Promise.resolve(info),
-          ]))
-          .then(([confirmationsOn, info]) => confirmationsOn ?
-            sendEngagmentEmail(info, {
-              templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-              subject: 'Application accepted for',
-            }) : null
-          )
-          .then(() => engagment)
-      }
-      return engagment
+  this.add({role:'Engagements',cmd:'sendEmail',email:'accepted'},
+          ({key, engagement, uid}, respond) =>
+    Promise.props({
+      confirmationsOn: OppConfirmationsOn(engagement.oppKey),
+      emailInfo: act({
+        role:'email',
+        cmd:'getInfo',
+        key,
+        profileKey: engagement.profileKey,
+        oppKey: engagement.oppKey,
+        uid,
+      }),
     })
-    .then(({isAssigned, isPaid}) => isAssigned && isPaid)
-    .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
-    .then(() => key)
-}
+    .then(({confirmationsOn, emailInfo}) =>
+      confirmationsOn ?
+        act({
+          role:'email',
+          cmd:'send',
+          email:'engagement',
+          templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+          subject:'Application acceted for',
+          ...emailInfo,
+        }) : null
+      )
+    .then(() => respond(null, engagement))
+    .catch(err => respond(err)))
 
-const extractAmount = s =>
-  parseInt(`${s}`.replace(/[^0-9\.]/g, ''), 10)
+  this.add({role:'Engagements',cmd:'update'}, ({key, values, uid}, respond) =>
+    Engagements.child(key).update(values)
+      .then(() => Engagements.get(key))
+      .then(engagement => {
+        if (values.isAccepted) {
+          this.act({
+            role:'Engagements',
+            cmd:'sendEmail',
+            email:'accepted',
+            key,
+            engagement,
+            uid,
+          }, err => err ? console.error(err) : null)
+        }
+        return engagement
+      })
+      .then(({isAssigned, isPaid}) => Boolean(isAssigned && isPaid))
+      .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
+      .then(() => respond(null, {key}))
+      .catch(err => respond(err)))
 
-const calcSparks = (pmt, dep) =>
-  (pmt + dep) * 0.035 + 1.0
+  const extractAmount = s =>
+    parseInt(`${s}`.replace(/[^0-9\.]/g, ''), 10)
 
-const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
+  const calcSparks = (pmt, dep) =>
+    (pmt + dep) * 0.035 + 1.0
 
-const pay = ({key, values}, uid, {gateway, models: {Engagements, Commitments, Profiles, Opps, Projects}}) => // eslint-disable-line max-len
-  Engagements.get(key).then(({oppKey}) =>
-    Commitments.by('oppKey', oppKey)
-  )
-  .then(commits => ({
-    payment: commits.find(({code}) => code === 'payment'),
-    deposit: commits.find(({code}) => code === 'deposit'),
-  }))
-  .then(c => ({
-    payment: extractAmount(c.payment && c.payment.amount || 0),
-    deposit: extractAmount(c.deposit && c.deposit.amount || 0),
-  }))
-  .then(c =>
-    calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
-  )
-  // .then(amounts => console.log('payment amounts found', amounts))
-  .tap(c => console.log('payment amounts found', c))
-  .then(payAmount =>
+  const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
+
+  const makePayment = ({values, key}) => payAmount =>
     gateway.createTransaction({
       amount: payAmount,
       paymentMethodNonce: values.paymentNonce,
@@ -102,7 +132,7 @@ const pay = ({key, values}, uid, {gateway, models: {Engagements, Commitments, Pr
       // verifyCard: true,
       submitForSettlement: true,
     })
-    .tap(result => console.log('braintree result:', result.success, result.transaction.status)) // eslint-disable-line max-len
+    .then(tap(result => console.log('braintree result:', result.success, result.transaction.status))) // eslint-disable-line max-len
     .then(({success, transaction}) =>
       Engagements.child(key).update({
         transaction,
@@ -120,23 +150,83 @@ const pay = ({key, values}, uid, {gateway, models: {Engagements, Commitments, Pr
         paymentError: errorResult.type,
       })
     })
-    .then(() => {
-      return Engagements.get(key)
-        .then(engagement =>
-          getEmailInfo({key, profileKey: engagement.profileKey, oppKey: engagement.oppKey, uid, Profiles, Opps, Projects}) // eslint-disable-line max-len
-            .then(info => sendEngagmentEmail(info, {
-              subject: 'Your are confirmed for',
-              templateId: 'b1180393-8841-4cf4-9bbd-4a8602a976ef',
-            }))
-            //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
-            .then(() => key)
-        )
-    })
+
+  this.add({role:'Engagements',cmd:'confirmWithoutPay'}, ({key, uid}, respond) =>
+    Engagements.get(key)
+    .then(engagement =>
+      Commitments.by('oppKey', engagement.oppKey)
+      .then(reduce((acc, c) =>
+              acc + pathOr(0, ['payment', 'amount'], c) +
+                    pathOr(0, ['deposit', 'amount'], c),
+                    0))
+      .then(amount => {
+        if (amount > 0) {
+          console.log(amount)
+          return Promise.reject(`Cannot no pay, ${amount} due!`)
+        }
+      })
+      .then(() =>
+        Engagements.child(key).update({
+          isPaid: true,
+          isConfirmed: true,
+        }))
+      .then(() => act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement}))
+      .then(() => respond(null, {key}))
+    )
+    .catch(err => respond(err))
   )
 
-export default {
-  create,
-  remove,
-  update,
-  pay,
+  this.add({role:'Engagements',cmd:'pay'}, ({key, values, uid}, respond) =>
+    Engagements.get(key)
+    .then(({oppKey}) => Commitments.by('oppKey', oppKey))
+    .then(commits => ({
+      payment: commits.find(({code}) => code === 'payment'),
+      deposit: commits.find(({code}) => code === 'deposit'),
+    }))
+    .then(c => ({
+      payment: extractAmount(c.payment && c.payment.amount || 0),
+      deposit: extractAmount(c.deposit && c.deposit.amount || 0),
+    }))
+    .then(c =>
+      calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
+    )
+    .then(tap(c => console.log('payment amounts found', c)))
+    .then(makePayment({key, values}))
+    .then(() => Engagements.get(key))
+    .then(engagement =>
+      act({
+        role:'Engagements',
+        cmd:'sendEmail',
+        email:'confirmed',
+        key,
+        uid,
+        engagement,
+      }, err => err ? console.error(err) : null)
+    )
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
+
+  this.add({role:'Engagements',cmd:'sendEmail',email:'confirmed'},
+          ({key, engagement, uid}, respond) =>
+    act({
+      role:'email',
+      cmd:'getInfo',
+      key,
+      profileKey: engagement.profileKey,
+      oppKey: engagement.oppKey,
+      uid,
+    })
+    .then(info => act({
+      role:'email',
+      cmd:'send',
+      email:'engagement',
+      subject: 'Your are confirmed for',
+      templateId: 'b1180393-8841-4cf4-9bbd-4a8602a976ef',
+      ...info,
+    }))
+    //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
+    .then(() => respond(null, {key}))
+    .catch(err => respond(err)))
 }
+
+export default actions
