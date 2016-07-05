@@ -1,4 +1,3 @@
-/* eslint max-nested-callbacks: 0, max-len:160 */
 import Promise from 'bluebird'
 import {prop, reduce, pathOr, flip, when, gt, always, tap} from 'ramda'
 

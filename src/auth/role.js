@@ -1,6 +1,7 @@
+import assert from 'assert'
 import Promise from 'bluebird'
 import {
-  anyPass, append, apply, compose, contains, equals, juxt, map, path,
+  all, allPass, anyPass, apply, compose, contains, equals, juxt, map, path,
   pathOr, prop, propOr,
 } from 'ramda'
 
@@ -15,7 +16,7 @@ const profileIsAdmin = pathOr(false, ['profile', 'isAdmin'])
 const profileIsEAP = pathOr(false, ['profile', 'isEAP'])
 const profileIsObjectOwner = model =>
   compose(
-    apply(equals),
+    allPass([all(Boolean), apply(equals)]),
     juxt([
       pathOr(false, ['profile', '$key']),
       pathOr(false, [model, 'ownerProfileKey']),
@@ -36,25 +37,35 @@ const profileIsActiveOrganizer = compose(
     ])
   )
 
-// Lists of rules
-const createProjectRules = [
+const profileAndProject = allPass([
+  prop('profile'),
+  prop('project'),
+])
+
+const createProjectRules = anyPass([
   profileIsAdmin,
   profileIsEAP,
-]
+])
 
-const updateProjectRules = [
-  profileIsAdmin,
-  profileIsProjectOwner,
-  profileIsActiveOrganizer,
-]
+const updateProjectRules = allPass([
+  profileAndProject,
+  anyPass([
+    profileIsAdmin,
+    profileIsProjectOwner,
+    profileIsActiveOrganizer,
+  ]),
+])
 
-const removeProjectRules = [
-  profileIsAdmin,
-  profileIsProjectOwner,
-]
+const removeProjectRules = allPass([
+  profileAndProject,
+  anyPass([
+    profileIsAdmin,
+    profileIsProjectOwner,
+  ]),
+])
 
-const updateTeamRules = append(profileIsTeamOwner, updateProjectRules)
-const updateOppRules = append(profileIsOppOwner, updateProjectRules)
+const updateTeamRules = anyPass([profileIsTeamOwner, updateProjectRules])
+const updateOppRules = anyPass([profileIsOppOwner, updateProjectRules])
 
 function pass(ruleFn, rejectionMsg, respond) {
   if (typeof respond === 'object') {
@@ -80,15 +91,15 @@ export default function() {
   const seneca = this
   const add = seneca.add.bind(seneca)
 
-  add({role:'Auth'}, async function ({uid}) {
-    return await this.act({role:'Firebase',cmd:'get',profile:{uid}})
+  add({role:'Auth'}, async function (msg) {
+    return await this.act({role:'Firebase',cmd:'get',profile:{uid: msg.uid}})
   })
 
   add({role:'Auth',cmd:'create',model:'Projects'}, async function({uid}) {
     const {profile} = await this.act({role:'Firebase',cmd:'get',profile:{uid}})
 
     return pass(
-      anyPass(createProjectRules),
+      createProjectRules,
       'User cannot create project',
       {profile}
     )
@@ -102,30 +113,38 @@ export default function() {
     })
 
     return pass(
-      anyPass(updateProjectRules),
+      updateProjectRules,
       'User cannot update project',
       objects
     )
   })
 
-  add({role:'Auth',cmd:'remove',model:'Projects'}, async function({uid, projectKey}) {
+  add({role:'Auth',cmd:'remove',model:'Projects'}, async function({uid, key}) {
     const objects = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
-      project: projectKey,
+      project: key,
     })
 
     return pass(
-      anyPass(removeProjectRules),
+      removeProjectRules,
       'User cannot remove project',
       objects
     )
   })
 
-  add({role:'Auth',cmd:'update',model:'Teams'}, async function({uid, teamKey}) {
+  add({role:'Auth',cmd:'remove',model:'Teams'}, async function({uid, key}) {
+    const {team} = await this.act({role:'Firebase',cmd:'get',team: key})
+    assert(team, `Team ${key} not found`)
+    return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: team.projectKey})
+  })
+
+  add({role:'Auth',cmd:'update',model:'Teams'}, async function({uid, key}) {
     const {profile, team} = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
-      team: teamKey,
+      team: key,
     })
+
+    assert(team, `Team ${key} not found`)
 
     const {project, organizers} = await this.act({role:'Firebase',cmd:'get',
       project: team.projectKey,
@@ -133,14 +152,23 @@ export default function() {
     })
 
     return pass(
-      anyPass(updateTeamRules),
+      updateTeamRules,
       'User cannot update team',
       {profile, team, project, organizers}
     )
   })
 
-  add({role:'Auth',model:'TeamImages'}, async function({key}) {
-    return await this.act({role:'Auth',model:'Teams',cmd:'update',key})
+  add({role:'Auth',cmd:'create',model:'Teams'}, async function(msg) {
+    return await this.act({
+      ...msg,
+      model:'Projects',
+      cmd:'update',
+      key: msg.values.projectKey,
+    })
+  })
+
+  add({role:'Auth',model:'TeamImages'}, async function(msg) {
+    return await this.act({...msg, role:'Auth',model:'Teams',cmd:'update',key:msg.key})
   })
 
   add({role:'Auth',cmd:'update',model:'Opps'}, async function({uid, key, oppKey}) {
@@ -154,7 +182,7 @@ export default function() {
     })
 
     return pass(
-      anyPass(updateOppRules),
+      updateOppRules,
       'User cannot update opp',
       {profile, opp, project, organizers}
     )
@@ -168,7 +196,7 @@ export default function() {
         role:'Auth',
         cmd:'update',
         model:'Teams',
-        teamKey:shift.teamKey,
+        key:shift.teamKey,
       })
     } else {
       return await this.prior(msg)
@@ -178,15 +206,15 @@ export default function() {
   add({role:'Auth',cmd:'create',model:'Shifts'}, async function(msg) {
     return await this.act({
       ...msg,
-      teamKey:msg.values.teamKey,
       role:'Auth',
       cmd:'update',
       model:'Teams',
+      key:msg.values.teamKey,
     })
   })
 
   add({role:'Auth',model:'Organizers'}, async function(msg) {
-    const {organizer} = await this.act({role:'Firebase',cmd:'get',organizer: msg.key})
+    const {organizer} = await this.act({role:'Firebase',cmd:'get',organizer:msg.key})
 
     return await this.act({
       ...msg,
@@ -196,7 +224,7 @@ export default function() {
     })
   })
 
-  add({role:'Auth',model:'Organizers'}, async function(msg) {
+  add({role:'Auth',model:'Organizers',cmd:'create'}, async function(msg) {
     return await this.act({
       ...msg,
       model:'Projects',
@@ -206,7 +234,8 @@ export default function() {
   })
 
   add({role:'Auth',model:'Organizers',cmd:'accept'}, async function({uid}) {
-    return await this.act({role:'Firebase',cmd:'get',profile:{uid}})
+    const data = await this.act({role:'Firebase',cmd:'get',profile:{uid}})
+    return pass(prop('profile'), 'Must have a profile', data)
   })
 
   add({role:'Auth', model:'Profiles', cmd:'update'},
@@ -216,7 +245,7 @@ export default function() {
         this.act({role:'Firebase',model:'Profiles',cmd:'get',key}),
       ])
 
-      if (myProfile.isAdmin || profile.uid === uid) {
+      if (myProfile && profile && (myProfile.isAdmin || profile.uid === uid)) {
         return {isAdmin: Boolean(myProfile.isAdmin), profile}
       } else {
         return {reject: 'Cannot update profile of another user'}
