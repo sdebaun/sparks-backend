@@ -1,14 +1,29 @@
-import {identity, join, toPairs, filter, has, cond, always, pipe, map} from 'ramda'
+import {identity, join, toPairs, filter, has, cond, always, pipe, map, equals, prop} from 'ramda'
 import {format} from 'util'
 import Firebase from 'firebase'
 
+// converts a field to a quote-wrapped field
 export const quoter = str => format('"%s"', str)
 
+// converts an array of arrays to an array of strings
 export const toCsv = map(pipe(map(quoter),join(',')))
 
+// takes a [key, values] item from toPairs and turns it into a single object
 export const toRecord = ([key,vals]) => {return {key, ...vals}}
 
+// turns a collection object of {key: record} into an array of objects
 export const toRows = pipe(toPairs, map(toRecord))
+
+// i cant believe this doesnt exist in Ramda already???
+export const propTrue = p => pipe(prop(p), equals(true))
+
+// returns the status code for an engagement based on presence of fields
+const statusCode = cond([
+  [propTrue('declined'), always('REJECTED')],
+  [propTrue('isConfirmed'), always('CONFIRMED')],
+  [propTrue('isAccepted'), always('ACCEPTED')],
+  [propTrue('isApplied'), always('APPLIED')],
+])
 
 export function lookupsFrom(host) {
   const fb = new Firebase(host)
@@ -39,20 +54,6 @@ export function dummyLookups() {
     Opp: async function(key) { return {name: 'Opp ' + key, projectKey: 'PROJ1'} },
   }
 }
-
-const statusCode = cond([
-  [has('declined'), always('REJECTED')],
-  [has('isConfirmed'), always('CONFIRMED')],
-  [has('isAccepted'), always('ACCEPTED')],
-  [has('isApplied'), always('APPLIED')],
-])
-// function statusCode({isApplied, isAccepted, isConfirmed, declined}) {
-//   if (declined) { return 'REJECTED' }
-//   if (isConfirmed) { return 'CONFIRMED' }
-//   if (isAccepted) { return 'ACCEPTED' }
-//   if (isApplied) { return 'APPLIED' }
-//   return 'NONE'
-// }
 
 export const lensFields = ({key, profile, project, opp, ...eng}) => [
   eng.profileKey,
