@@ -46,7 +46,7 @@ test('userCanCreateProject', t => {
     .then(d => t.equal(d.profile, profile)))
 })
 
-test.only('userCanUpdateProject', t => {
+test('userCanUpdateProject', t => {
   const authWithProfile = p => {
     profile = p
     return auths.userCanUpdateProject({uid, projectKey})
