@@ -18,7 +18,7 @@ function actions({auths: {userCanUpdateOpp, userCanUpdateProject}, models: {Enga
               act({
                 role:'email',
                 cmd:'getInfo',
-                key,
+                key: a.$key,
                 profileKey: a.profileKey,
                 uid,
                 oppKey: key,

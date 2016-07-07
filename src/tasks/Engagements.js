@@ -88,7 +88,7 @@ function actions({gateway, models}) {
           cmd:'send',
           email:'engagement',
           templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-          subject:'Application acceted for',
+          subject:'Application accepted for',
           ...emailInfo,
         }) : null
       )
