@@ -48,6 +48,7 @@
     "braintree": "^1.37.1",
     "braintree-node": "^1.0.9",
     "express": "^4.13.4",
+    "fast-csv": "^2.0.0",
     "firebase": "^2.4.1",
     "firebase-queue": "^1.2.1",
     "inflection": "^1.10.0",
@@ -56,6 +57,7 @@
     "ramda": "^0.21.0",
     "rx": "^4.0.8",
     "sendgrid": "^2.0.0",
-    "seneca": "^2.1.0"
+    "seneca": "^2.1.0",
+    "twilio": "^2.9.1"
   }
 }
