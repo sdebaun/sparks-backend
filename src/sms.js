@@ -20,11 +20,3 @@ csv
 .fromPath(filename)
 .on('data', call)
 .on('end', () => console.log('done'))
-
-// twilio.messages.create({
-//   body: 'This is a test from Twilio',
-//   to: '8053129100',
-//   from: process.env.TWILIO_PHONE_NUMBER,
-// }).then(response => {
-//   console.log('sms response:', response)
-// })
