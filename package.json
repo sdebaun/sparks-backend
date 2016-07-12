@@ -10,7 +10,7 @@
     "postinstall": "npm run build",
     "build": "node_modules/.bin/babel -d dist src",
     "test": "node_modules/.bin/babel-tape-runner src/**/*.test.js | ./node_modules/.bin/tap-spec",
-    "watch": "watch 'npm run testonce' src/"
+    "watch": "watch 'npm run test' src/"
   },
   "repository": {
     "type": "git",
