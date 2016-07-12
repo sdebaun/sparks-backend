@@ -1,4 +1,4 @@
-import {identity, join, toPairs, filter, has, cond, always, pipe, map, equals, prop} from 'ramda'
+import {identity, join, toPairs, filter, has, cond, always, pipe, map, prop} from 'ramda'
 import {format} from 'util'
 import Firebase from 'firebase'
 
@@ -14,15 +14,12 @@ export const toRecord = ([key,vals]) => {return {key, ...vals}}
 // turns a collection object of {key: record} into an array of objects
 export const toRows = pipe(toPairs, map(toRecord))
 
-// i cant believe this doesnt exist in Ramda already???
-export const propTrue = p => pipe(prop(p), equals(true))
-
 // returns the status code for an engagement based on presence of fields
 const statusCode = cond([
-  [propTrue('declined'), always('REJECTED')],
-  [propTrue('isConfirmed'), always('CONFIRMED')],
-  [propTrue('isAccepted'), always('ACCEPTED')],
-  [propTrue('isApplied'), always('APPLIED')],
+  [prop('declined'), always('REJECTED')],
+  [prop('isConfirmed'), always('CONFIRMED')],
+  [prop('isAccepted'), always('ACCEPTED')],
+  [prop('isApplied'), always('APPLIED')],
 ])
 
 export function lookupsFrom(host) {
