@@ -7,12 +7,17 @@ async function call(row) {
   const [profileKey, name, email, phone, engKey, status, opp] = row
   console.log('calling', name, phone)
   const response = await twilio.messages.create({
-    body: 'Youve been accepted as a Northern Nights volunteer! Please go to http://sparks.network to confirm or email help@sparks.network to cancel.',
+    body: 'HURRY! Confirm your Northern Nights volunteer spot or lose any shifts you selected. Confirm at http://sparks.network or email help@sparks.network to cancel and stop our texts.',
     to: phone,
     from: process.env.TWILIO_PHONE_NUMBER,
   })
   console.log('response', response)
 }
+
+// async function fakeCall(row) {
+//   const [profileKey, name, email, phone, engKey, status, opp] = row
+//   console.log('calling', name, phone)
+// }
 
 const filename = process.argv[2]
 console.log('opening', filename)
