@@ -3,29 +3,7 @@ import senecaSn from './seneca-sn'
 import braintree from 'braintree-node'
 import Seneca from 'seneca-await'
 import {startDispatch} from './dispatch'
-
-const requiredVars = [
-  'FIREBASE_HOST',
-  'FIREBASE_TOKEN',
-  'BT_ENVIRONMENT',
-  'BT_MERCHANT_ID',
-  'BT_PUBLIC_KEY',
-  'BT_PRIVATE_KEY',
-  'SENDGRID_KEY',
-  'DOMAIN',
-  'PORT',
-]
-
-const cfg = {}
-
-requiredVars.forEach(v => {
-  if (process.env[v]) {
-    cfg[v] = process.env[v].trim()
-  } else {
-    console.log('Must specify ' + v)
-    process.exit()
-  }
-})
+import cfg from './cfg'
 
 const app = express()
 const remote = {}

@@ -1,4 +1,4 @@
-const objToRows = obj =>
+export const objToRows = obj =>
   obj && Object.keys(obj).map(k => ({$key: k, ...obj[k]})) || []
 
 const byChildKey = root => (field, key) => {

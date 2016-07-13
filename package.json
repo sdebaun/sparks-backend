@@ -62,6 +62,6 @@
     "rx": "^4.0.8",
     "sendgrid": "^2.0.0",
     "seneca": "^2.1.0",
-    "seneca-await": "0.0.10"
+    "seneca-await": "0.0.11"
   }
 }
