@@ -45,6 +45,7 @@ function actions({gateway, models}) {
 
   const removeAssignments = keys => Promise.all(keys.map(key =>
     Assignments.child(key).remove()))
+
   const updateShiftCounts = keys => Promise.all(keys.map(key =>
     act({
       role:'Shifts',
@@ -231,6 +232,12 @@ function actions({gateway, models}) {
     //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
+
+  this.add({role:'Engagements',cmd:'updateAssignmentCount'}, async function({key, by}) {
+    const ref = Engagements.child(key).child('assignmentCount')
+    await ref.transaction(count => (count || 0) + by)
+    return {key}
+  })
 }
 
 export default actions

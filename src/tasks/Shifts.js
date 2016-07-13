@@ -6,24 +6,9 @@ function actions({models}) {
   const {Shifts} = models
   const act = Promise.promisify(this.act, {context: this})
 
-  const shiftTimes = values => {
-    const date = moment(join('', [values.date, 'T', '00:00:00Z'])).tz('utc')
-    const start = date.clone().add(values.start, 'hours')
-    const end = start.clone().add(values.hours, 'hours')
-
-    return tap(c => console.log(c), {
-      ...values,
-      date: date.format('YYYY-MM-DD'),
-      startTime: start.format(),
-      endTime: end.format(),
-      start: moment.duration(start.diff(date)).asHours(),
-      end: moment.duration(end.diff(date)).asHours(),
-    })
-  }
-
   this.add({role:'Shifts',cmd:'create'}, ({values, profile}, respond) => {
     const key = Shifts.push({
-      ...shiftTimes(values),
+      ...values,
       ownerProfileKey: profile.$key,
     }).key()
 
@@ -36,7 +21,7 @@ function actions({models}) {
     .catch(err => respond(err)))
 
   this.add({role:'Shifts',cmd:'update'}, ({key, values}, respond) =>
-    Shifts.child(key).update(shiftTimes(values))
+    Shifts.child(key).update(values)
     .then(() => act({
       role:'Shifts',
       cmd:'updateCounts',

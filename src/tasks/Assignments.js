@@ -59,6 +59,22 @@ function actions({models}) {
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
+  async function updateEngagement(assignmentKey, by) {
+    const assignment = await act({role:'Firebase',model:'Assignments',cmd:'get',assignmentKey})
+    return await this.act({role:'Engagements',cmd:'updateAssignmentCount', key: assignment.engagementKey, by})
+  }
+
+  this.wrap({role:'Assignments',cmd:'remove'}, async function(msg) {
+    updateEngagement(msg.key, -1)
+    return await this.prior(msg)
+  })
+
+  this.wrap({role:'Assignments',cmd:'create'}, async function(msg) {
+    const response = await this.prior(msg)
+    updateEngagement(response.key, 1)
+    return response
+  })
+
   return {
     name: 'Assignments',
   }
