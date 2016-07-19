@@ -6,6 +6,8 @@
       "module": "bluebird",
       "method": "coroutine"
     }],
-    ["resolver", { "resolveDirs": ["src"] }]
+    ["module-alias", [
+      { "src": "./src/test", "expose": "test" }
+    ]]
   ]
 }
