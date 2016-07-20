@@ -1,10 +1,10 @@
 import Inflection from 'inflection'
-import {
-  keys, objOf, values, whereEq, find, mergeAll, filter, mapObjIndexed,
+import R, {
+  keys, objOf, values, whereEq, find, mergeAll, filter, mapObjIndexed, lensPath,
 } from 'ramda'
 
 function mockFirebase() {
-  const store = {}
+  let store = {}
 
   function set(fixtures) {
     const withKeys = mapObjIndexed(
@@ -51,6 +51,34 @@ function mockFirebase() {
 
   this.add({role:'Firebase',cmd:'get'}, async function(msg) {
     return get(msg)
+  })
+
+  function generateKey() {
+    return ('0000' + (Math.random() * Math.pow(36,4) << 0).toString(36)).slice(-4)
+  }
+
+  this.add({role:'Firebase',cmd:'push'}, async function(msg) {
+    const {values, model} = msg
+    const key = generateKey()
+
+    const lens = lensPath([model.toLowerCase(), key])
+    store = R.set(lens, values, store)
+
+    return {key}
+  })
+
+  this.add({role:'Firebase',cmd:'update'}, async function(msg) {
+    const {key, values, model} = msg
+    const lens = lensPath([model.toLowerCase(), key])
+    const item = R.view(lens, store)
+
+    if (!item) {
+      return {error: 'Item not found'}
+    } else {
+      const newItem = {...item, ...values}
+      store = R.set(lens, newItem, store)
+      return {key}
+    }
   })
 }
 

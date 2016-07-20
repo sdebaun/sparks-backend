@@ -25,6 +25,7 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
   this.add({role:'Firebase',cmd:'get'}, function(msg, respond) {
     scopedGetStuff(omit(['role','cmd'], msg))
       .then(stuff => respond(null, stuff))
+      .catch(err => respond(null, {error: err}))
   })
 
   const names = keys(models)
@@ -40,18 +41,19 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
 
     this.add({role:'Firebase',model:name,cmd:'update'}, function({key, values}, respond) {
       model.child(key).update(values)
-        .then(() => respond(null, key))
+        .then(() => respond(null, {key}))
+        .catch(error => respond(null, {error}))
     })
 
     this.add({role:'Firebase',model:name,cmd:'push'}, function({values}, respond) {
       const key = model.push(values).key()
-      respond(null, key)
+      respond(null, {key})
     })
 
     this.add({role:'Firebase',model:name,cmd:'remove'}, function({key}, respond) {
-      if(!key) { response(null, {error: 'no key'}) }
+      if (!key) { respond(null, {error: 'no key'}) }
       model.child(key).remove()
-        .then(() => respond(null, key))
+        .then(() => respond(null, {key}))
     })
   }
 
