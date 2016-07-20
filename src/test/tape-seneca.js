@@ -2,7 +2,6 @@ import tapeTest from 'tape-async'
 import Seneca from 'seneca-await'
 import mockFirebase from 'test/mock-firebase'
 import fixtures from 'test/fixtures'
-import {concat} from 'ramda'
 
 function tape(plugins) {
   const seneca = Seneca()
@@ -18,7 +17,18 @@ function tape(plugins) {
   function test(msg, fn, testFn = tapeTest) {
     seneca
       .ready(function() {
-        testFn(msg, fn.bind(seneca))
+        const bound = fn.bind(seneca)
+
+        async function testWithRollback(t) {
+          await seneca.act('role:Fixtures,cmd:snapshot')
+          try {
+            return await bound(t)
+          } finally {
+            await seneca.act('role:Fixtures,cmd:restore')
+          }
+        }
+
+        testFn(msg, testWithRollback)
       })
   }
 

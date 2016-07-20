@@ -1,20 +1,22 @@
 import {omit} from 'ramda'
 
-function action({models: {Profiles, Users}}) {
-  const add = this.add
+function action() {
+  const seneca = this
 
-  const makeUserAndProfile = (uid, values) => {
-    const profileKey = Profiles.push({...values,
+  async function makeUserAndProfile(uid, values) {
+    const {key} = await seneca.act('role:Firebase,cmd:push,model:Profiles', {values: {
+      ...values,
       uid,
       isAdmin: false,
       isEAP: false,
-    }).key()
+    }})
 
-    return Users.set(uid, profileKey).then(() => profileKey)
+    await seneca.act('role:Firebase,model:Users,cmd:set', {uid, profileKey: key})
+    return {key}
   }
 
-  add({role:'Profiles',cmd:'create'}, async function({uid, values}) {
-    const profile = await Profiles.first('uid', uid)
+  this.add({role:'Profiles',cmd:'create'}, async function({uid, values}) {
+    const {profile} = await this.act('role:Firebase,cmd:get', {profile: {uid}})
 
     if (profile) {
       return {key: profile.$key}
@@ -23,14 +25,15 @@ function action({models: {Profiles, Users}}) {
     }
   })
 
-  add({role:'Profiles',cmd:'update',isAdmin:true}, async function({key, values}) {
-    await Profiles.child(key).update(values)
-    return {key}
+  this.add({role:'Profiles',cmd:'update',isAdmin:true}, async function({key, values}) {
+    return await this.act('role:Firebase,cmd:update,model:Profiles', {key, values})
   })
 
-  add({role:'Profiles',cmd:'update',isAdmin:false}, async function({key, values, uid}) {
-    await Profiles.child(key).update(omit(['isAdmin', 'isEAP'], values))
-    return {key}
+  this.add({role:'Profiles',cmd:'update',isAdmin:false}, async function({key, values}) {
+    return await this.act('role:Firebase,cmd:update,model:Profiles', {
+      key,
+      values: omit(['isAdmin', 'isEAP'], values),
+    })
   })
 }
 

@@ -5,11 +5,10 @@ function actions() {
   const seneca = this
   const act = Promise.promisify(this.act, {context: this})
 
-  this.add({role:'Assignments',cmd:'create'}, async function({values}) {
-    const {key} = await this.act('role:Firebase,cmd:push,model:Assignments', {values})
-    await this.act('role:Shifts,cmd:updateCounts', {key: values.shiftKey})
-    return {key}
-  })
+  async function updateEngagement(key, by) {
+    const {assignment} = await act({role:'Firebase',cmd:'get',assignment: key})
+    return await seneca.act({role:'Engagements',cmd:'updateAssignmentCount', key: assignment.engagementKey, by})
+  }
 
   async function updateAssignmentStatus(engagementKey) {
     const {engagement, assignments} = await seneca.act('role:Firebase,cmd:get', {
@@ -27,6 +26,12 @@ function actions() {
     return await seneca.act('role:Firebase,model:Engagements,cmd:update',
       {key: engagementKey, values: {isAssigned}})
   }
+
+  this.add({role:'Assignments',cmd:'create'}, async function({values}) {
+    const {key} = await this.act('role:Firebase,cmd:push,model:Assignments', {values})
+    await this.act('role:Shifts,cmd:updateCounts', {key: values.shiftKey})
+    return {key}
+  })
 
   this.add({role:'Assignments',cmd:'remove'}, async function({key}) {
     const {assignment} = await this.act({role:'Firebase',cmd:'get',assignment:key})
@@ -47,11 +52,6 @@ function actions() {
       key, values,
     })
   })
-
-  async function updateEngagement(key, by) {
-    const {assignment} = await act({role:'Firebase',cmd:'get',assignment: key})
-    return await seneca.act({role:'Engagements',cmd:'updateAssignmentCount', key: assignment.engagementKey, by})
-  }
 
   this.wrap({role:'Assignments',cmd:'remove'}, async function(msg) {
     updateEngagement(msg.key, -1)

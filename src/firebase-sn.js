@@ -28,6 +28,10 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
       .catch(err => respond(null, {error: err}))
   })
 
+  this.add({role:'Firebase',model:'Users',cmd:'set'}, async function({uid, profileKey}) {
+    return await models.Users.set(uid).set(profileKey)
+  })
+
   const names = keys(models)
   for (let name of names) {
     const model = models[name]

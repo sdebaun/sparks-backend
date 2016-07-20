@@ -5,6 +5,7 @@ import R, {
 
 function mockFirebase() {
   let store = {}
+  let snapshot = store
 
   function set(fixtures) {
     const withKeys = mapObjIndexed(
@@ -49,20 +50,41 @@ function mockFirebase() {
     return set(msg.fixtures)
   })
 
+  this.add({role:'Fixtures',cmd:'snapshot'}, async function() {
+    snapshot = R.clone(store)
+    return {}
+  })
+
+  this.add({role:'Fixtures',cmd:'restore'}, async function() {
+    store = R.clone(snapshot)
+    return {}
+  })
+
   this.add({role:'Firebase',cmd:'get'}, async function(msg) {
-    return get(msg)
+    if (msg.model) {
+      const name = Inflection.singularize(msg.model.toLowerCase())
+      return objOf(name, store[msg.model][msg.key])
+    } else {
+      return get(msg)
+    }
   })
 
   function generateKey() {
     return ('0000' + (Math.random() * Math.pow(36,4) << 0).toString(36)).slice(-4)
   }
 
+  this.add({role:'Firebase',cmd:'set',model:'Users'}, async function({uid, profileKey}) {
+    const lens = lensPath(['Users', uid])
+    store = R.set(lens, profileKey, store)
+    return {uid}
+  })
+
   this.add({role:'Firebase',cmd:'push'}, async function(msg) {
     const {values, model} = msg
     const key = generateKey()
 
     const lens = lensPath([model.toLowerCase(), key])
-    store = R.set(lens, values, store)
+    store = R.set(lens, {...values, $key: key}, store)
 
     return {key}
   })
