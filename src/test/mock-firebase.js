@@ -102,6 +102,12 @@ function mockFirebase() {
       return {key}
     }
   })
+
+  this.add({role:'Firebase',cmd:'remove'}, async function({model, key}) {
+    const path = [model.toLowerCase(), key]
+    store = R.dissocPath(path, store)
+    return {key}
+  })
 }
 
 export default mockFirebase
