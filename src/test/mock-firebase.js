@@ -1,6 +1,6 @@
 import Inflection from 'inflection'
 import R, {
-  keys, objOf, values, whereEq, find, mergeAll, filter, mapObjIndexed, lensPath,
+  keys, objOf, values, whereEq, find, mergeAll, filter, mapObjIndexed, lensPath, propEq,
 } from 'ramda'
 
 function mockFirebase() {
@@ -67,6 +67,16 @@ function mockFirebase() {
     } else {
       return get(msg)
     }
+  })
+
+  this.add({role:'Firebase',cmd:'first'}, async function(msg) {
+    const ary = values(store[msg.model.toLowerCase()])
+    return find(propEq(msg.by, msg.value))(ary)
+  })
+
+  this.add({role:'Firebase',cmd:'by'}, async function(msg) {
+    const ary = values(store[msg.model.toLowerCase()])
+    return filter(propEq(msg.by, msg.value))(ary)
   })
 
   function generateKey() {

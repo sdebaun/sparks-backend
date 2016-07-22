@@ -1,4 +1,5 @@
 import snFirebase from './firebase-sn'
+import firebaseGet from './firebase-get'
 import auth from './auth'
 import tasks from './tasks'
 
@@ -22,6 +23,7 @@ const collections = [
 export default function({cfg, remote}) {
   const seneca = this
   seneca.use(snFirebase, {cfg, collections})
+  seneca.use(firebaseGet)
 
   seneca.ready(() => {
     seneca.act({role:'Firebase',cmd:'Models'}, (err, {models}) => {

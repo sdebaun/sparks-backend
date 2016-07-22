@@ -257,4 +257,20 @@ export default function() {
     // Anyone can create a profile
     return {}
   })
+
+  add({role:'Auth', model:'Commitments', cmd:'create'}, async function({uid, values: {oppKey}}) {
+    const {opp} = await this.act('role:Firebase,cmd:get', {opp: oppKey})
+    return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+  })
+
+  add({role:'Auth', model:'Commitments', cmd:'update'}, async function({uid, key}) {
+    const {commitment} = await this.act('role:Firebase,cmd:get', {
+      commitment: key,
+    })
+    const {opp} = await this.act('role:Firebase,cmd:get', {
+      opp: commitment.oppKey,
+    })
+
+    return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+  })
 }

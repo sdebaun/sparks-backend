@@ -1,7 +1,6 @@
 import Firebase from 'firebase'
-import {getStuff} from './util'
 import {makeCollections} from './collections'
-import {omit, keys} from 'ramda'
+import {keys} from 'ramda'
 
 export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
   const fb = new Firebase(FIREBASE_HOST)
@@ -12,20 +11,12 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
     set: (uid, profileKey) => fb.child('Users').child(uid).set(profileKey),
   }
 
-  const scopedGetStuff = getStuff(models)
-
   this.add({role:'Firebase'}, function(msg, respond) {
     respond(null, {fb})
   })
 
   this.add({role:'Firebase',cmd:'Models'}, function(msg, respond) {
     respond(null, {models})
-  })
-
-  this.add({role:'Firebase',cmd:'get'}, function(msg, respond) {
-    scopedGetStuff(omit(['role','cmd'], msg))
-      .then(stuff => respond(null, stuff))
-      .catch(err => respond(null, {error: err}))
   })
 
   this.add({role:'Firebase',model:'Users',cmd:'set'}, async function({uid, profileKey}) {
@@ -41,6 +32,10 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
 
     this.add({role:'Firebase',model:name,cmd:'first'}, function({by, value}, respond) {
       model.first(by, value).then(result => respond(null, result))
+    })
+
+    this.add({role:'Firebase',model:name,cmd:'by'}, function({by, value}, respond) {
+      model.by(by, value).then(result => respond(null, result))
     })
 
     this.add({role:'Firebase',model:name,cmd:'update'}, function({key, values}, respond) {
