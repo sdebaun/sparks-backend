@@ -1,7 +1,3 @@
-import {
-  find, values, propEq,
-} from 'ramda'
-
 export function Profiles() {
   const profiles = {
     volunteer: {
@@ -19,6 +15,7 @@ export function Profiles() {
 
     teamLead: {
       uid: 'teamLead',
+      fullName: 'Mr Leader',
     },
 
     admin: {
@@ -52,14 +49,6 @@ export function Profiles() {
   this.add('init:Profiles', async function() {
     await this.act({role:'Fixtures',cmd:'set',fixtures:{profiles}})
     await this.act({role:'Fixtures',cmd:'set',fixtures:{users}})
-  })
-
-  this.add('role:Firebase,model:Profiles,cmd:first,by:uid', async function({value}) {
-    return find(propEq('uid', value), values(profiles))
-  })
-
-  this.add('role:Firebase,model:Profiles,cmd:get', async function({key}) {
-    return profiles[key]
   })
 
   return 'Profiles'
@@ -99,6 +88,7 @@ export function Organizers() {
 export function Teams() {
   const teams = {
     testTeam: {
+      name: 'Test Team',
       projectKey: 'testFest',
       ownerProfileKey: 'teamLead',
     },
@@ -113,7 +103,11 @@ export function Teams() {
 
 export function Shifts() {
   const shifts = {
-    testShift: {
+    shiftOne: {
+      teamKey: 'testTeam',
+    },
+
+    shiftTwo: {
       teamKey: 'testTeam',
     },
   }

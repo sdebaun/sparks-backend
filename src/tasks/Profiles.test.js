@@ -1,7 +1,7 @@
 import tape from 'test/tape-seneca'
 import Profiles from './Profiles'
 
-const test = tape([Profiles])
+const test = tape('Profiles', [Profiles])
 const uid = '1234567abc'
 
 const values = {
@@ -10,7 +10,7 @@ const values = {
   phone: '441234884411',
 }
 
-test('Profiles create / new profile', async function(t) {
+test('create / new profile', async function(t) {
   const {key} = await this.act('role:Profiles,cmd:create', {uid, values})
   t.ok(key)
 
@@ -20,11 +20,11 @@ test('Profiles create / new profile', async function(t) {
   t.false(profile.isAdmin, 'new profiles are not admin')
   t.false(profile.isEAP, 'new profiles are not eap')
 
-  const {user} = await this.act('role:Firebase,model:Users,cmd:get', {key: uid})
+  const {user} = await this.act('role:Firebase,cmd:get', {user: uid})
   t.ok(user, 'adds user record')
 })
 
-test('Profiles create / existing profile', async function(t) {
+test('create / existing profile', async function(t) {
   const {key: originalProfile} = await this.act('role:Profiles,cmd:create', {uid, values})
   t.ok(originalProfile, 'returns profile key')
 
@@ -37,7 +37,7 @@ test('Profiles create / existing profile', async function(t) {
   t.equal(profile.fullName, 'Bob Fossil', 'does not reset the name the second time around')
 })
 
-test('Profiles update / not admin', async function(t) {
+test('update / not admin', async function(t) {
   await this.act('role:Profiles,cmd:update,isAdmin:false', {key: 'volunteer', values: {
     fullName: 'Spiny Norman',
     isAdmin: true,
@@ -50,7 +50,7 @@ test('Profiles update / not admin', async function(t) {
   t.false(profile.isEAP)
 })
 
-test('Profiles update / admin', async function(t) {
+test('update / admin', async function(t) {
   await this.act('role:Profiles,cmd:update,isAdmin:true', {key: 'volunteer', values: {
     fullName: 'Dinsdale',
     isAdmin: true,

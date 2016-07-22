@@ -59,9 +59,13 @@ function actions() {
   })
 
   this.wrap({role:'Assignments',cmd:'create'}, async function(msg) {
+    const engagementKey = msg.values.engagementKey
     const response = await this.prior(msg)
 
-    updateEngagement(response.key, 1)
+    if (response.key) {
+      seneca.act({role:'Engagements',cmd:'updateAssignmentCount', key: engagementKey, by: 1})
+    }
+
     return response
   })
 

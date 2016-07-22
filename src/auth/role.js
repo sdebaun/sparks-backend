@@ -139,17 +139,15 @@ export default function() {
   })
 
   add({role:'Auth',cmd:'update',model:'Teams'}, async function({uid, key}) {
-    const {profile, team} = await this.act({role:'Firebase',cmd:'get',
+    const {profile, team, project, organizers} = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
       team: key,
+      project: ['team', 'projectKey'],
+      organizers: {projectKey: ['team', 'projectKey']},
     })
 
     assert(team, `Team ${key} not found`)
-
-    const {project, organizers} = await this.act({role:'Firebase',cmd:'get',
-      project: team.projectKey,
-      organizers: {projectKey: team.projectKey},
-    })
+    assert(project, 'Project not found')
 
     return pass(
       updateTeamRules,
@@ -172,14 +170,15 @@ export default function() {
   })
 
   add({role:'Auth',cmd:'update',model:'Opps'}, async function({uid, key, oppKey}) {
-    const {profile, opp} = await this.act({role:'Firebase',cmd:'get',
+    const {profile, opp, project, organizers} = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
       opp: oppKey || key,
+      project: ['opp', 'projectKey'],
+      organizers: {projectKey: ['opp', 'projectKey']},
     })
-    const {project, organizers} = this.act({role:'Firebase',cmd:'get',
-      project: opp.projectKey,
-      organizers: {projectKey: opp.projectKey},
-    })
+
+    assert(opp, 'Opp not found')
+    assert(project, 'Project not found')
 
     return pass(
       updateOppRules,

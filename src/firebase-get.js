@@ -1,27 +1,48 @@
 import Inflection from 'inflection'
 import Promise from 'bluebird'
 import {
-  T, allPass, always, applySpec, complement, compose, cond, equals, filter,
+  T, always, applySpec, complement, compose, cond, equals, filter,
   fromPairs, head, keys, lensPath, map, mapObjIndexed, objOf, prop, propEq,
-  tail, type, values, view, omit,
+  tail, type, values, view, omit, toPairs, not,
 } from 'ramda'
 
-export function firebaseGet() {
+export default function firebaseGet() {
   const seneca = this
 
+  const byValue = {
+    by: compose(head, keys, prop('value')),
+    value: compose(head, values, prop('value')),
+  }
+
+  const pair = compose(head, toPairs)
+
+  const cmdArgs = cond([
+    [
+      compose(equals('String'), type, prop('value')),
+      always({cmd: always('get'), key: prop('value')}),
+    ],
+    [
+      prop('isArray'),
+      always({
+        cmd: always('by'),
+        ...byValue,
+      }),
+    ],
+    [T,
+      always({
+        cmd: always('first'),
+        ...byValue,
+      }),
+    ],
+  ])
+
   function createPromise(spec) {
-    const cmd = cond([
-      [compose(equals('String'), type), always('get')],
-      [prop('isArray'), always('by')],
-      [T, always('first')],
-    ])
+    if (not(spec.value)) { return Promise.resolve(null) }
 
     const pattern = applySpec({
       role: always('Firebase'),
       model:prop('model'),
-      cmd: cmd(prop('value')),
-      value: prop('value'),
-      key: prop('value'),
+      ...cmdArgs(spec),
     })(spec)
 
     return seneca.act(pattern)
@@ -29,7 +50,8 @@ export function firebaseGet() {
 
   function resolveDependentValue(value, record) {
     if (type(value) === 'Object') {
-      return objOf(head(keys(value)), resolveDependentValue(head(values(value))))
+      const bv = pair(value)
+      return objOf(bv[0], resolveDependentValue(bv[1], record))
     }
 
     const lens = lensPath(tail(value))
@@ -37,7 +59,7 @@ export function firebaseGet() {
   }
 
   function createDependentPromises(spec, specs) {
-    const dependentSpecs = filter(propEq('dependsOn', spec.key))(specs)
+    const dependentSpecs = compose(filter(propEq('dependsOn', spec.key)), values)(specs)
 
     dependentSpecs.forEach(ds => {
       ds.promise = spec.promise.then(r => {
@@ -73,22 +95,19 @@ export function firebaseGet() {
   *
   */
 
-  const getDependsOn = cond([
-    [
-      allPass([
-        equals('Object'),
-        compose(equals('Array'), head, values),
-      ]),
-      compose(head, head, values),
-    ],
-    [
-      equals('Array'),
-      head,
-    ],
-    [
-      T, null,
-    ],
-  ])
+  function getDependsOn(value) {
+    const t = type(value)
+
+    if (t === 'Object') {
+      return getDependsOn(head(values(value)))
+    }
+
+    if (t === 'Array') {
+      return head(value)
+    }
+
+    return null
+  }
 
   function getStuff(stuff) {
     const specs = mapObjIndexed((value, key) => {
@@ -126,7 +145,7 @@ export function firebaseGet() {
     const promises = compose(
       fromPairs,
       map(applySpec([prop('key'), prop('promise')])),
-      filter(complement(prop('promise'))),
+      filter(prop('promise')),
       values,
     )(specs)
 
@@ -134,8 +153,13 @@ export function firebaseGet() {
   }
 
   this.add({role:'Firebase',cmd:'get'}, async function(msg) {
-    const spec = omit(['role','cmd'], msg)
+    if (msg.model) { return await this.prior(msg) }
+
+    const spec = omit(['role','cmd','default$','meta$','tx$'], msg)
     return await getStuff(spec)
+  })
+
+  this.add('init:firebaseGet', async function() {
   })
 
   return 'firebaseGet'

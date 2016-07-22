@@ -1,13 +1,15 @@
 import tapeTest from 'tape-async'
 import Seneca from 'seneca-await'
 import mockFirebase from 'test/mock-firebase'
+import firebaseGet from '../firebase-get'
 import fixtures from 'test/fixtures'
 
-function tape(plugins) {
+function tape(namespace, plugins) {
   const seneca = Seneca()
 
   seneca
     .use(mockFirebase)
+    .use(firebaseGet)
     .use(fixtures)
 
   for (let plugin of plugins) {
@@ -22,13 +24,13 @@ function tape(plugins) {
         async function testWithRollback(t) {
           await seneca.act('role:Fixtures,cmd:snapshot')
           try {
-            return await bound(t)
+            await bound(t)
           } finally {
             await seneca.act('role:Fixtures,cmd:restore')
           }
         }
 
-        testFn(msg, testWithRollback)
+        testFn(`${namespace} / ${msg}`, testWithRollback)
       })
   }
 

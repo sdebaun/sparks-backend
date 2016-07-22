@@ -2,34 +2,34 @@ import tape from 'test/tape-seneca'
 import Assignments from './Assignments'
 
 function mockShifts() {
-  this.add('role:Shifts,cmd:updateCounts', async function(msg) {
+  this.add('role:Shifts,cmd:updateCounts', async function() {
     return {}
   })
 
-  this.add('role:Engagements,cmd:updateAssignmentCount', async function(msg) {
+  this.add('role:Engagements,cmd:updateAssignmentCount', async function() {
     return {}
   })
 }
 
-const test = tape([mockShifts, Assignments])
+const test = tape('Assignments', [mockShifts, Assignments])
 
-test('Assignments create', async function(t) {
+test('create', async function(t) {
   const values = {
     oppKey: 'testOpp',
     engagementKey: 'testEngagement',
     teamKey: 'testTeam',
-    shiftKey: 'testShift',
+    shiftKey: 'shiftOne',
   }
   const response = await this.act('role:Assignments,cmd:create', {values})
   t.ok(response.key)
 })
 
-test('Assignments update', async function(t) {
+test('update', async function(t) {
   const values = {
     oppKey: 'testOpp',
     engagementKey: 'testEngagement',
     teamKey: 'testTeam',
-    shiftKey: 'testShift',
+    shiftKey: 'shiftOne',
   }
   const {key} = await this.act('role:Assignments,cmd:create', {values})
   const response = await this.act('role:Assignments,cmd:update', {key, values: {newValue: true}})

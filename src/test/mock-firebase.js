@@ -50,6 +50,10 @@ function mockFirebase() {
     return set(msg.fixtures)
   })
 
+  this.add({role:'Fixtures',cmd:'get'}, async function() {
+    return R.clone(store)
+  })
+
   this.add({role:'Fixtures',cmd:'snapshot'}, async function() {
     snapshot = R.clone(store)
     return {}
@@ -61,12 +65,7 @@ function mockFirebase() {
   })
 
   this.add({role:'Firebase',cmd:'get'}, async function(msg) {
-    if (msg.model) {
-      const name = Inflection.singularize(msg.model.toLowerCase())
-      return objOf(name, store[msg.model][msg.key])
-    } else {
-      return get(msg)
-    }
+    return store[msg.model.toLowerCase()][msg.key]
   })
 
   this.add({role:'Firebase',cmd:'first'}, async function(msg) {
@@ -84,9 +83,15 @@ function mockFirebase() {
   }
 
   this.add({role:'Firebase',cmd:'set',model:'Users'}, async function({uid, profileKey}) {
-    const lens = lensPath(['Users', uid])
+    const lens = lensPath(['users', uid])
     store = R.set(lens, profileKey, store)
     return {uid}
+  })
+
+  this.add({role:'Firebase',cmd:'get',model:'Users'}, async function({uid}) {
+    const lens = lensPath(['users', uid])
+    const profileKey = R.view(lens, store)
+    return {profileKey}
   })
 
   this.add({role:'Firebase',cmd:'push'}, async function(msg) {

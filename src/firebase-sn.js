@@ -19,10 +19,6 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
     respond(null, {models})
   })
 
-  this.add({role:'Firebase',model:'Users',cmd:'set'}, async function({uid, profileKey}) {
-    return await models.Users.set(uid).set(profileKey)
-  })
-
   const names = keys(models)
   for (let name of names) {
     const model = models[name]
@@ -55,6 +51,18 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
         .then(() => respond(null, {key}))
     })
   }
+  this.add({role:'Firebase',model:'Users',cmd:'set'}, async function({uid, profileKey}) {
+    return await models.Users.set(uid).set(profileKey)
+  })
+
+  /**
+  * Special handling for the users model because we store there just key value
+  * string pairs and seneca does not like returning primitive types
+  */
+  this.add({role:'Firebase',model:'Users',cmd:'get'}, async function({uid}) {
+    const profileKey = await models.Users.get(uid)
+    return {profileKey}
+  })
 
   this.add({init:'firebase-sn'}, function(args, respond) {
     console.log('Authenticating firebase')

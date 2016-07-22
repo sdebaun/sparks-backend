@@ -2,17 +2,17 @@
 import tape from 'test/tape-seneca'
 import role from './role'
 
-const test = tape([role])
+const test = tape('Auth', [role])
 
 function accepts(msg, testFn = test) {
-  testFn(`Auth / ${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
+  testFn(`${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
     const response = await this.act({role:'Auth',...msg})
     t.false(response.reject, 'it is accepted')
   })
 }
 
 function rejects(msg, testFn = test) {
-  testFn(`Auth / ${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
+  testFn(`${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
     const response = await this.act({role:'Auth',...msg})
     t.ok(response.reject, 'it is rejected')
   })
@@ -123,7 +123,7 @@ test('Auth / Profiles create', async function(t) {
 }
 
 {
-  const msg = {model:'Shifts',cmd:'update',key:'testShift'}
+  const msg = {model:'Shifts',cmd:'update',key:'shiftOne'}
   rejects(msg)
   rejects({...msg, uid:'123'})
   rejects({...msg, uid:'volunteer'})
@@ -134,7 +134,7 @@ test('Auth / Profiles create', async function(t) {
 }
 
 {
-  const msg = {model:'Shifts',cmd:'remove',key:'testShift'}
+  const msg = {model:'Shifts',cmd:'remove',key:'shiftOne'}
   rejects(msg)
   rejects({...msg, uid:'123'})
   rejects({...msg, uid:'volunteer'})
