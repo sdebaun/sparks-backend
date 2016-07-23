@@ -1,9 +1,10 @@
 import tapeTest from 'tape-async'
 import Seneca from 'seneca-await'
 import mockFirebase from 'test/mock-firebase'
-import {prop} from 'ramda'
+import {prop, T} from 'ramda'
 
-const seneca = Seneca()
+const log = {map:[{level:'all',handler:T}]}
+const seneca = Seneca({log})
 seneca.use(mockFirebase)
 
 const people = {

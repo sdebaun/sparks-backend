@@ -5,7 +5,13 @@ import firebaseGet from '../firebase-get'
 import fixtures from 'test/fixtures'
 
 function tape(namespace, plugins) {
-  const seneca = Seneca()
+  const seneca = Seneca({
+    log: {
+      map: [
+        {level: 'all', handler: function() {}},
+      ],
+    },
+  })
 
   seneca
     .use(mockFirebase)
