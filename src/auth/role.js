@@ -91,7 +91,7 @@ export default function() {
   const seneca = this
   const add = seneca.add.bind(seneca)
 
-  add({role:'Auth'}, async function (msg) {
+  add({role:'Auth',default$:true}, async function (msg) {
     return await this.act({role:'Firebase',cmd:'get',profile:{uid: msg.uid}})
   })
 
@@ -171,6 +171,10 @@ export default function() {
 
   add({role:'Auth',model:'TeamImages'}, async function(msg) {
     return await this.act({...msg, role:'Auth',model:'Teams',cmd:'update',key:msg.key})
+  })
+
+  add('role:Auth,cmd:update,model:Opps', async function({uid, values}) {
+    return await this.act('role:Auth,cmd:update,model:Projects', {uid, key: values.projectKey})
   })
 
   add({role:'Auth',cmd:'update',model:'Opps'}, async function({uid, key, oppKey}) {
@@ -261,19 +265,17 @@ export default function() {
     return {}
   })
 
-  add({role:'Auth', model:'Commitments', cmd:'create'}, async function({uid, values: {oppKey}}) {
-    const {opp} = await this.act('role:Firebase,cmd:get', {opp: oppKey})
+  add({role:'Auth', model:'Commitments'}, async function({uid, key}) {
+    const {opp} = await this.act('role:Firebase,cmd:get', {
+      commitment: key,
+      opp: ['commitment', 'oppKey'],
+    })
+
     return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
   })
 
-  add({role:'Auth', model:'Commitments', cmd:'update'}, async function({uid, key}) {
-    const {commitment} = await this.act('role:Firebase,cmd:get', {
-      commitment: key,
-    })
-    const {opp} = await this.act('role:Firebase,cmd:get', {
-      opp: commitment.oppKey,
-    })
-
+  add({role:'Auth', model:'Commitments', cmd:'create'}, async function({uid, values: {oppKey}}) {
+    const {opp} = await this.act('role:Firebase,cmd:get', {opp: oppKey})
     return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
   })
 
@@ -289,4 +291,39 @@ export default function() {
 
     return await this.act('role:Auth,model:Projects,cmd:update', {uid: msg.uid, key: projectKey})
   })
+
+  add('role:Auth,model:Fulfillers', async function({uid, key, values}) {
+    const oppKey =
+      key ?
+        (await this.act('role:Firebase,cmd:get', {fulfiller: key})).fulfiller.key :
+        values.oppKey
+
+    return await this.act('role:Auth,model:Opp,cmd:update', {uid, key: oppKey})
+  })
+
+  add('role:Auth,model:Assignments,cmd:create', async function({uid, values}) {
+    const {profile, opp} = await this.act('role:Firebase,cmd:get', {
+      profile: {uid},
+      opp: values.oppKey,
+    })
+
+    assert(profile, 'Profile not found')
+    assert(opp, 'Opp not found')
+
+    if (profile.$key === values.profileKey) {
+      return {profile}
+    } else {
+      return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+    }
+  })
+
+  this.wrap('role:Auth', async function(msg) {
+    try {
+      return await this.prior(msg)
+    } catch (error) {
+      return {reject: error, error}
+    }
+  })
+
+  return 'roles-sn'
 }

@@ -2,6 +2,7 @@ import snFirebase from './firebase-sn'
 import firebaseGet from './firebase-get'
 import auth from './auth'
 import tasks from './tasks'
+import email from './email'
 
 const collections = [
   'Arrivals',
@@ -24,6 +25,7 @@ export default function({cfg, remote}) {
   const seneca = this
   seneca.use(snFirebase, {cfg, collections})
   seneca.use(firebaseGet)
+  seneca.use(email)
 
   seneca.ready(() => {
     seneca.act({role:'Firebase',cmd:'Models'}, (err, {models}) => {

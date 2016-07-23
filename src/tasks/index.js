@@ -12,7 +12,6 @@ import Projects from './Projects'
 import Shifts from './Shifts'
 import TeamImages from './TeamImages'
 import Teams from './Teams'
-import Emails from './emails'
 
 export default function(options) {
   const seneca = this
@@ -30,7 +29,6 @@ export default function(options) {
   seneca.use(Shifts, options)
   seneca.use(TeamImages, options)
   seneca.use(Teams, options)
-  seneca.use(Emails, options)
 
   return 'sn-tasks'
 }

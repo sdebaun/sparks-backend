@@ -82,6 +82,12 @@ function mockFirebase() {
     return ('0000' + (Math.random() * Math.pow(36,4) << 0).toString(36)).slice(-4)
   }
 
+  this.add({role:'Firebase',cmd:'set'}, async function({model, key, values}) {
+    const lens = lensPath([model.toLowerCase(), key])
+    store = R.set(lens, values)
+    return {key}
+  })
+
   this.add({role:'Firebase',cmd:'set',model:'Users'}, async function({uid, profileKey}) {
     const lens = lensPath(['users', uid])
     store = R.set(lens, profileKey, store)

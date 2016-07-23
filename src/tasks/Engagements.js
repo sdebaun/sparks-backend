@@ -1,78 +1,76 @@
 import Promise from 'bluebird'
-import {prop, reduce, pathOr, flip, when, gt, always, tap} from 'ramda'
+import {
+  prop, pathOr, tap, compose, sum, applySpec, map,
+} from 'ramda'
+import defaults from './defaults'
 
-function actions({gateway, models}) {
-  const {Assignments, Engagements, Opps, Commitments} = models
-  const act = Promise.promisify(this.act, {context: this})
+function actions({gateway}) {
+  const seneca = this
 
-  this.add({role:'Engagements',cmd:'create'}, ({oppKey, profileKey, uid}, respond) =>
-      gateway.generateClientToken()
-      .then(({clientToken}) =>
-        Promise.resolve(
-          Engagements.push({
-            oppKey,
-            profileKey,
-            isApplied: true,
-            isAccepted: false,
-            isConfirmed: false,
-            paymentClientToken: clientToken,
-          }))
-        .then(ref => ref.key())
-        .then(key =>
-          act({
-            role:'email',
-            cmd:'getInfo',
-            key,
-            profileKey: profileKey,
-            uid,
-            oppKey: oppKey,
-          })
-          .then(info =>
-            act({
-              role:'email',
-              cmd:'send',
-              email:'engagement',
-              templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
-              subject:'New Engagement for',
-              ...info,
-            })
-          )
-          .then(() => key)
-        )
-      )
-      .then(key => respond(null, {key}))
-      .catch(err => respond(err)))
+  this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey, uid}) {
+    const clientToken = await gateway.generateClientToken()
+    const {key} = await this.act('role:Firebase,model:Engagements,cmd:push', {values: {
+      oppKey,
+      profileKey,
+      isApplied: true,
+      isAccepted: false,
+      isConfirmed: false,
+      paymentClientToken: clientToken,
+    }})
+
+    const info = await this.act({
+      role:'email',
+      cmd:'getInfo',
+      key,
+      profileKey: profileKey,
+      uid,
+      oppKey: oppKey,
+    })
+
+    await this.act({
+      role:'email',
+      cmd:'send',
+      email:'engagement',
+      templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
+      subject:'New Engagement for',
+      ...info,
+    })
+
+    return {key}
+  })
 
   const removeAssignments = keys => Promise.all(keys.map(key =>
-    Assignments.child(key).remove()))
+    seneca.act('role:Firebase,model:Assignments,cmd:remove', {key})
+  ))
 
   const updateShiftCounts = keys => Promise.all(keys.map(key =>
-    act({
+    seneca.act({
       role:'Shifts',
       cmd:'updateCounts',
       key,
     })))
 
-  this.add({role:'Engagements',cmd:'remove'}, ({key, uid}, respond) =>
-    Assignments.by('engagementKey', key)
-    .then(engs => Promise.all(engs.map(({$key}) => Assignments.get($key))))
-    .then(assigns =>
-      removeAssignments(assigns.map(prop('$key')))
-        .then(() => updateShiftCounts(assigns.map(prop('shiftKey'))))
-    )
-    .then(() => Engagements.child(key).remove())
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+  this.add({role:'Engagements',cmd:'remove'}, async function({key}) {
+    const {assignments} = await this.act('role:Firebase,cmd:get', {
+      assignments: {engagementKey: key},
+    })
+
+    await removeAssignments(assignments.map(prop('$key')))
+    await updateShiftCounts(assignments.map(prop('shiftKey')))
+    await this.act('role:Firebase,model:Engagements,cmd:remove', {key})
+
+    return {key}
+  })
 
   const OppConfirmationsOn = oppKey =>
-    Opps.get(oppKey)
-      .then(opp => opp.confirmationsOn || false)
+    seneca.act('role:Firebase,cmd:get', {opp: oppKey})
+      .then(({opp}) => opp.confirmationsOn || false)
 
   this.add({role:'Engagements',cmd:'sendEmail',email:'accepted'},
           ({key, engagement, uid}, respond) =>
     Promise.props({
       confirmationsOn: OppConfirmationsOn(engagement.oppKey),
-      emailInfo: act({
+      emailInfo: seneca.act({
         role:'email',
         cmd:'getInfo',
         key,
@@ -83,7 +81,7 @@ function actions({gateway, models}) {
     })
     .then(({confirmationsOn, emailInfo}) =>
       confirmationsOn ?
-        act({
+        seneca.act({
           role:'email',
           cmd:'send',
           email:'engagement',
@@ -96,9 +94,9 @@ function actions({gateway, models}) {
     .catch(err => respond(err)))
 
   this.add({role:'Engagements',cmd:'update'}, ({key, values, uid}, respond) =>
-    Engagements.child(key).update(values)
-      .then(() => Engagements.get(key))
-      .then(engagement => {
+    seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values})
+      .then(() => seneca.act('role:Firebase,cmd:get', {engagement: key}))
+      .then(({engagement}) => {
         if (values.isAccepted) {
           this.act({
             role:'Engagements',
@@ -112,7 +110,7 @@ function actions({gateway, models}) {
         return engagement
       })
       .then(({isAssigned, isPaid}) => Boolean(isAssigned && isPaid))
-      .then(isConfirmed => Engagements.child(key).update({isConfirmed}))
+      .then(isConfirmed => seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {isConfirmed}}))
       .then(() => respond(null, {key}))
       .catch(err => respond(err)))
 
@@ -134,86 +132,89 @@ function actions({gateway, models}) {
     })
     .then(tap(result => console.log('braintree result:', result.success, result.transaction.status))) // eslint-disable-line max-len
     .then(({success, transaction}) =>
-      Engagements.child(key).update({
+      seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {
         transaction,
         amountPaid: transaction.amount,
         isPaid: success,
         isConfirmed: success,
         paymentError: success ? false : transaction.status,
-      })
+      }})
     )
+    .then(() => true)
     .catch(errorResult => {
       console.log('BRAINTREE TRANSACTION ERROR', errorResult)
-      Engagements.child(key).update({
+      seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {
         isPaid: false,
         isConfirmed: false,
         paymentError: errorResult.type,
-      })
+      }})
+      return false
     })
 
-  this.add({role:'Engagements',cmd:'confirmWithoutPay'}, ({key, uid}, respond) =>
-    Engagements.get(key)
-    .then(engagement =>
-      Commitments.by('oppKey', engagement.oppKey)
-      .then(reduce((acc, c) =>
-              acc + pathOr(0, ['payment', 'amount'], c) +
-                    pathOr(0, ['deposit', 'amount'], c),
-                    0))
-      .then(amount => {
-        if (amount > 0) {
-          console.log(amount)
-          return Promise.reject(`Cannot no pay, ${amount} due!`)
-        }
-      })
-      .then(() =>
-        Engagements.child(key).update({
-          isPaid: true,
-          isConfirmed: true,
-        })
-      )
-      .then(() => {
-        // Send the email in the background
-        act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement})
-      })
-      .then(() => respond(null, {key}))
-    )
-    .catch(err => respond(err))
+  const commitmentPayment = compose(extractAmount, pathOr(0, ['payment', 'amount']))
+  const commitmentDeposit = compose(extractAmount, pathOr(0, ['deposit', 'amount']))
+  const commitmentTotal = compose(
+    sum,
+    applySpec([commitmentPayment, commitmentDeposit])
   )
 
-  this.add({role:'Engagements',cmd:'pay'}, ({key, values, uid}, respond) =>
-    Engagements.get(key)
-    .then(({oppKey}) => Commitments.by('oppKey', oppKey))
-    .then(commits => ({
-      payment: commits.find(({code}) => code === 'payment'),
-      deposit: commits.find(({code}) => code === 'deposit'),
-    }))
-    .then(c => ({
-      payment: extractAmount(c.payment && c.payment.amount || 0),
-      deposit: extractAmount(c.deposit && c.deposit.amount || 0),
-    }))
-    .then(c =>
-      calcNonref(extractAmount(c.payment),extractAmount(c.deposit))
-    )
-    .then(tap(c => console.log('payment amounts found', c)))
-    .then(makePayment({key, values}))
-    .then(() => Engagements.get(key))
-    .then(engagement => {
-      // Send the email in the background
-      act({
-        role:'Engagements',
-        cmd:'sendEmail',
-        email:'confirmed',
-        key,
-        uid,
-        engagement,
-      })
-    })
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+  const commitmentsTotal = compose(sum, map(commitmentTotal))
+  const commitmentsAmounts = applySpec({
+    payment: compose(sum, map(commitmentPayment)),
+    deposit: compose(sum, map(commitmentDeposit)),
+  })
+
+  async function oppTotal(oppKey) { // eslint-disable-line
+    const {commitments} = await this.act('role:Firebase,cmd:get', {commitments: {oppKey}})
+    return commitmentsTotal(commitments)
+  }
+
+  async function oppAmounts(oppKey) {
+    const {commitments} = await this.act('role:Firebase,cmd:get', {commitments: {oppKey}})
+    return commitmentsAmounts(commitments)
+  }
+
+  this.add({role:'Engagements',cmd:'confirmWithoutPay'}, async function({key, uid}) {
+    const {engagement} = await this.act('role:Firebase,cmd:get', {engagement: key})
+    const amount = await oppAmounts(engagement.oppKey)
+
+    if (amount > 0) {
+      throw new Error(`Cannot no pay, ${amount} due!`)
+    }
+
+    await this.act('role:Firebase,model:Engagements,cmd:update', {key, values: {
+      isPaid: true,
+      isConfirmed: true,
+    }})
+
+    // Send the email in the background
+    this.act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement})
+
+    return {key}
+  })
+
+  this.add({role:'Engagements',cmd:'pay'}, async function({key, values, uid}) {
+    const {engagement} = await this.act('role:Firebase,cmd:get', {engagement: key})
+    const {payment, deposit} = await oppAmounts(engagement.oppKey)
+    const nonRef = calcNonref(payment, deposit)
+
+    console.log('payments amount found', nonRef)
+
+    const paymentFn = makePayment({key, values})
+    const result = await paymentFn(nonRef)
+
+    if (result) {
+      // Send email
+      const {engagement: refreshed} = this.act('role:Firebase,cmd:get', {engagement: key})
+      await this.act('role:Engagements,cmd:sendEmail,email:confirmed', {key, uid, engagement: refreshed})
+    }
+
+    return {key}
+  })
 
   this.add({role:'Engagements',cmd:'sendEmail',email:'confirmed'},
           ({key, engagement, uid}, respond) =>
-    act({
+    seneca.act({
       role:'email',
       cmd:'getInfo',
       key,
@@ -221,7 +222,7 @@ function actions({gateway, models}) {
       oppKey: engagement.oppKey,
       uid,
     })
-    .then(info => act({
+    .then(info => seneca.act({
       role:'email',
       cmd:'send',
       email:'engagement',
@@ -234,10 +235,13 @@ function actions({gateway, models}) {
     .catch(err => respond(err)))
 
   this.add({role:'Engagements',cmd:'updateAssignmentCount'}, async function({key, by}) {
-    const ref = Engagements.child(key).child('assignmentCount')
+    const {model} = await this.act('role:Firebase,cmd:Model,model:Engagements')
+    const ref = model.child(key).child('assignmentCount')
     await ref.transaction(count => (count || 0) + by)
     return {key}
   })
+
+  return defaults(this, 'Engagements').init()
 }
 
 export default actions

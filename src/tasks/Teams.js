@@ -1,22 +1,12 @@
-function actions({models: {Teams}}) {
-  this.add({role:'Teams',cmd:'create'}, ({values, profile}, respond) => {
-    const key = Teams.push({
-      ...values,
-      ownerProfileKey: profile.$key,
-    }).key()
+import defaults from './defaults'
 
-    respond(null, {key})
+function actions() {
+  this.wrap('role:Teams,cmd:create', async function(msg) {
+    return await this.prior({...msg, values: {...msg.values, ownerProfileKey: msg.profile.$key}})
   })
 
-  this.add({role:'Teams',cmd:'remove'}, ({key}, respond) =>
-    Teams.child(key).remove()
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
-
-  this.add({role:'Teams',cmd:'update'}, ({key, values}, respond) =>
-    Teams.child(key).update(values)
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+  return defaults(this, 'Teams')
+    .init('create', 'remove', 'update')
 }
 
 export default actions

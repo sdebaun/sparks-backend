@@ -204,3 +204,22 @@ test('Auth / Profiles create', async function(t) {
     accepts({...msg, uid:'admin'})
   }
 }
+
+{
+  const msg = {model:'Assignments',cmd:'create',values:{
+    teamKey: 'testTeam',
+    shiftKey: 'shiftOne',
+    oppKey: 'oppOne',
+    engagementKey: 'volunteer',
+    profileKey: 'volunteer',
+  }}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}

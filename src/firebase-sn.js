@@ -19,6 +19,10 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
     respond(null, {models})
   })
 
+  this.add({role:'Firebase',cmd:'Model'}, function(msg, respond) {
+    respond(null, {model: models[msg.model]})
+  })
+
   const names = keys(models)
   for (let name of names) {
     const model = models[name]
@@ -43,6 +47,12 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
     this.add({role:'Firebase',model:name,cmd:'push'}, function({values}, respond) {
       const key = model.push(values).key()
       respond(null, {key})
+    })
+
+    this.add({role:'Firebase',model:name,cmd:'set'}, function({key, values}, respond) {
+      model.child(key).set(values)
+        .then(() => respond(null, {key}))
+        .catch(err => respond(err))
     })
 
     this.add({role:'Firebase',model:name,cmd:'remove'}, function({key}, respond) {

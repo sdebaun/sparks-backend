@@ -1,13 +1,15 @@
 /* eslint max-nested-callbacks: 0 */
-import Promise from 'bluebird'
+import defaults from './defaults'
 
-function actions({models: {Engagements, Opps}}) { // eslint-disable-line
-  const act = Promise.promisify(this.act, {context: this})
+function actions() {
+  const seneca = this
 
-  const getAcceptedApplicants = oppKey =>
-    Engagements.by('oppKey', oppKey)
-    .then(engagements => engagements.filter(e => e.isAccepted))
+  async function getAcceptedApplicants(oppKey) {
+    const {engagements} = await seneca.act('role:Firebase,cmd:get', {engagements: {oppKey}})
+    return engagements.filter(e => e.isAccepted)
+  }
 
+  // TODO: rewrite this
   const checkAndSendAcceptanceEmail = (key, {confirmationsOn}, uid, opp) => { // eslint-disable-line
     // confirmations are being turned on
     if (confirmationsOn && !opp.hasOwnProperty(confirmationsOn)) {
@@ -15,7 +17,7 @@ function actions({models: {Engagements, Opps}}) { // eslint-disable-line
         getAcceptedApplicants(key)
           .then(engagements => {
             engagements.forEach(a => {
-              act({
+              seneca.act({
                 role:'email',
                 cmd:'getInfo',
                 key: a.$key,
@@ -24,7 +26,7 @@ function actions({models: {Engagements, Opps}}) { // eslint-disable-line
                 oppKey: key,
               })
               .then(info =>
-                act({
+                seneca.act({
                   role:'email',
                   cmd:'send',
                   email:'engagement',
@@ -39,32 +41,24 @@ function actions({models: {Engagements, Opps}}) { // eslint-disable-line
     return true
   }
 
-  this.add({role:'Opps',cmd:'create'}, ({values, profile}, respond) => {
-    const key = Opps.push({
+  this.add({role:'Opps',cmd:'create'}, async function({values, profile}) {
+    return await this.act('role:Firebase,model:Opps,cmd:create', {values: {
       ...values,
       ownerProfileKey: profile.$key,
-    }).key()
-
-    respond(null, {key})
+    }})
   })
 
-  this.add({role:'Opps',cmd:'remove'}, ({key}, respond) =>
-    Opps.child(key).remove()
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+  this.add({role:'Opps',cmd:'update'}, async function({key, values, uid, opp}) {
+    console.log('opp update', values)
 
-  this.add({role:'Opps',cmd:'update'}, ({key, values, uid, opp}, respond) =>
-    console.log('opp update', values) ||
-    Opps.child(key).update(values)
-    .then(() => checkAndSendAcceptanceEmail(key, values, uid, opp))
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+    await this.act('role:Firebase,model:Opps,cmd:update', {key, values})
+    await checkAndSendAcceptanceEmail(key, values, uid, opp)
 
-  this.add({role:'Auth',cmd:'create',model:'Opps'}, function(msg, respond) {
-    this.act({
-      ...msg,role:'Auth',cmd:'update',model:'Projects',
-      projectKey: msg.values.projectKey}, respond)
+    return {key}
   })
+
+  return defaults(this, 'Opps')
+    .init('remove')
 }
 
 export default actions

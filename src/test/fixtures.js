@@ -2,15 +2,23 @@ export function Profiles() {
   const profiles = {
     volunteer: {
       uid: 'volunteer',
+      fullName: 'Mr First',
+    },
+
+    volTwo: {
+      uid: 'volTwo',
+      fullName: 'Mr Second',
     },
 
     eap: {
       uid: 'eap',
       isEAP: true,
+      fullName: 'Mr EAP',
     },
 
     organizer: {
       uid: 'organizer',
+      fullName: 'Mr Organizer',
     },
 
     teamLead: {
@@ -21,12 +29,17 @@ export function Profiles() {
     admin: {
       uid: 'admin',
       isAdmin: true,
+      fullName: 'Mr Admin',
     },
   }
 
   const users = {
     volunteer: {
       profileKey: 'volunteer',
+    },
+
+    volTwo: {
+      profileKey: 'volTwo',
     },
 
     eap: {
@@ -68,6 +81,21 @@ export function Projects() {
   })
 
   return 'Projects'
+}
+
+export function Opps() {
+  const opps = {
+    oppOne: {
+      projectKey: 'testFest',
+      name: 'Opp One',
+    },
+  }
+
+  this.add('init:Opps', async function() {
+    await this.act({role:'Fixtures',cmd:'set',fixtures:{opps}})
+  })
+
+  return 'Opps'
 }
 
 export function Organizers() {
@@ -134,7 +162,31 @@ export function Arrivals() {
   return 'Arrivals'
 }
 
+export function Engagements() {
+  const engagements = {
+    volunteer: {
+      projectKey: 'testFest',
+      oppKey: 'oppOne',
+      profileKey: 'volunteer',
+    },
+  }
+
+  this.add('init:Engagements', async function() {
+    await this.act('role:Fixtures,cmd:set',{fixtures:{engagements}})
+  })
+
+  return 'Engagements'
+}
+
 export default function() {
-  this.use(Profiles).use(Projects).use(Organizers).use(Teams).use(Shifts).use(Arrivals)
+  this
+    .use(Profiles)
+    .use(Projects)
+    .use(Organizers)
+    .use(Teams)
+    .use(Shifts)
+    .use(Arrivals)
+    .use(Opps)
+    .use(Engagements)
   return 'fixtures'
 }

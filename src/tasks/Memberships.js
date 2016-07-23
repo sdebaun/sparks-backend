@@ -1,10 +1,9 @@
 import Promise from 'bluebird'
+import defaults from './defaults'
 
-function actions({models: {Memberships}}) {
-  const act = Promise.promisify(this.act, {context: this})
-
-  this.add({role:'Memberships',cmd:'create'}, ({teamKey, oppKey, engagementKey, answer}, respond) => {
-    const key = Memberships.push({
+function actions() {
+  this.add({role:'Memberships',cmd:'create'}, async function({teamKey, oppKey, engagementKey, answer}) {
+    return await this.act('role:Firebase,model:Memberships,cmd:push', {values: {
       teamKey,
       oppKey,
       engagementKey,
@@ -12,24 +11,11 @@ function actions({models: {Memberships}}) {
       isApplied: true,
       isAccepted: false,
       isConfirmed: false,
-    }).key()
-
-    respond(null, {key})
+    }})
   })
 
-  this.add({role:'Memberships',cmd:'remove'}, ({key, uid}, respond) =>
-    act({role:'Firebase',cmd:'get',
-      profile: {uid},
-      membership: key,
-    })
-    .then(() => Memberships.child(key).remove())
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
-
-  this.add({role:'Memberships',cmd:'update'}, ({key, values}, respond) =>
-    Memberships.child(key).update(values)
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+  return defaults(this, 'Memberships')
+    .init('remove', 'update')
 }
 
 export default actions

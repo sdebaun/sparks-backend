@@ -1,17 +1,17 @@
-import Promise from 'bluebird'
 import {not, unless, equals, merge} from 'ramda'
+import defaults from './defaults'
 
-function actions({models: {Organizers}}) {
-  const act = Promise.promisify(this.act, {context: this})
+function actions() {
+  const seneca = this
 
   this.add({role:'Organizers',cmd:'sendEmail'}, ({key, uid}, respond) =>
-    act({role:'Firebase',cmd:'get', organizer: key})
+    seneca.act({role:'Firebase',cmd:'get', organizer: key})
     .then(({organizer}) =>
-      act({role:'Firebase',cmd:'get',project: organizer.projectKey})
+      seneca.act({role:'Firebase',cmd:'get',project: organizer.projectKey})
       .then(merge({organizer}))
     )
     .then(({project, organizer}) =>
-      act({
+      seneca.act({
         role:'email',
         cmd:'send',
         email:'organizer',
@@ -24,26 +24,16 @@ function actions({models: {Organizers}}) {
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
-  this.add({role:'Organizers',cmd:'create'},
-    ({values, profile, uid}, respond) => {
-      const key = Organizers.push({
-        ...values,
-        invitedByProfileKey: profile.$key,
-      }).key()
+  this.add({role:'Organizers',cmd:'create'}, async function({values, profile, uid}) {
+    const {key} = await this.act('role:Firebase,model:Organizers,cmd:push', {values: {
+      ...values,
+      invitedByProfileKey: profile.$key,
+    }})
 
-      this.act({role:'Organizers',cmd:'sendEmail',uid,key}, (...args) =>
-        console.log('Sent email', args)
-      )
+    this.act({role:'Organizers',cmd:'sendEmail',uid,key})
 
-      respond(null, {key})
-    })
-
-  this.add({role:'Organizers',cmd:'remove'},
-    ({key, projectKey, uid}, respond) => {
-      Organizers.child(key).remove()
-        .then(() => respond(null, {key}))
-        .catch(err => respond(err))
-    })
+    return {key}
+  })
 
   const canAccept = ({profile, organizer}) =>
     profile &&
@@ -56,19 +46,22 @@ function actions({models: {Organizers}}) {
       `User ${profile.$key} cannot accept organizer invite ${organizer.$key}`))
 
   this.add({role:'Organizers',cmd:'accept'}, ({uid, key}, respond) =>
-    act({role:'Firebase',cmd:'get',
+    seneca.act({role:'Firebase',cmd:'get',
       profile: {uid},
       organizer: key,
     })
     .then(rejectCannotAccept)
-    .then(({profile, organizer}) =>
-      Organizers.child(organizer.$key)
-        .update({
-          isAccepted: true,
-          profileKey: profile.$key,
-          acceptedAt: Date.now()}))
+    .then(({profile}) =>
+      seneca.act('role:Firebase,model:Organizers,cmd:update', {key, values: {
+        isAccepted: true,
+        profileKey: profile.$key,
+        acceptedAt: Date.now(),
+      }})
     .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+    .catch(err => respond(err))))
+
+  return defaults(this, 'Organizers')
+    .init('remove')
 }
 
 export default actions

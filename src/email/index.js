@@ -1,21 +1,19 @@
-import Promise from 'bluebird'
 import SendGrid from 'sendgrid'
 
 const sendgrid = SendGrid(process.env.SENDGRID_KEY)
 const DOMAIN = process.env.DOMAIN
 
-function actions({models: {Projects}}) {
-  const act = Promise.promisify(this.act, {context: this})
+function actions() {
+  const seneca = this
 
   this.add({role:'email',cmd:'getInfo'},
           ({key, oppKey, profileKey, uid}, respond) =>
-    act({role:'Firebase',cmd:'get',
+    seneca.act({role:'Firebase',cmd:'get',
       profile: profileKey,
       opp: oppKey,
-    }).then(({profile, opp}) =>
-      Projects.get(opp.projectKey)
-      .then(project =>
-        respond(null, {project, opp, profile, key, uid, profileKey}))))
+      project: ['opp', 'projectKey'],
+    }).then(({profile, opp, project}) =>
+      respond(null, {project, opp, profile, key, uid, profileKey})))
 
   this.add({role:'email',cmd:'send',email:'engagement'},
   (
@@ -74,6 +72,8 @@ function actions({models: {Projects}}) {
       respond(null, json)
     })
   })
+
+  return 'Emails'
 }
 
 export default actions
