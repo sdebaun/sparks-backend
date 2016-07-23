@@ -176,3 +176,14 @@ test('Auth / Profiles create', async function(t) {
   accepts({...msg, uid:'eap'})
   accepts({...msg, uid:'admin'})
 }
+
+{
+  const msg = {model:'ProjectImages',cmd:'set',key:'testFest'}
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'volunteer'})
+  rejects({...msg, uid:'teamLead'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}

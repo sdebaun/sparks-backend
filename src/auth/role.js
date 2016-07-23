@@ -132,6 +132,10 @@ export default function() {
     )
   })
 
+  add({role:'Auth',model:'ProjectImages'}, async function({uid, key}) {
+    return await this.act('role:Auth,model:Projects,cmd:update', {uid, key})
+  })
+
   add({role:'Auth',cmd:'remove',model:'Teams'}, async function({uid, key}) {
     const {team} = await this.act({role:'Firebase',cmd:'get',team: key})
     assert(team, `Team ${key} not found`)
