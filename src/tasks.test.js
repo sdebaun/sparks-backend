@@ -31,11 +31,12 @@ test('auth for every task', async function(t) {
     }
 
     const authTask = this.find(pattern)
-    t.ok(authTask, `${task.plugin_fullname} / ${task.pattern} has auth task`)
 
     if (authTask) {
-      const notDefault = not(authTask.raw.default$)
-      t.ok(notDefault, `${task.plugin_fullname} / ${task.pattern} has auth task ${authTask.pattern}`)
+      const notDefault = not(authTask.priormeta.raw.default$)
+      t.ok(notDefault, `${task.plugin_fullname} / ${task.pattern} has auth task`)
+    } else {
+      t.fail(`${task.plugin_fullname} / ${task.pattern} has auth task`)
     }
   }
 })

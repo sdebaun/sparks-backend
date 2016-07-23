@@ -168,6 +168,12 @@ export function Engagements() {
       projectKey: 'testFest',
       oppKey: 'oppOne',
       profileKey: 'volunteer',
+      answer: 'the proof is in the pudding',
+      isAssigned: false,
+      isPaid: false,
+      isConfirmed: false,
+      isAccepted: false,
+      paymentClientToken: 'imaprettyboy',
     },
   }
 

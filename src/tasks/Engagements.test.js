@@ -34,6 +34,7 @@ function test(...args) {
   emailsSent = []
   tapeTest(...args)
 }
+test.only = tapeTest.only
 
 test('create', async function(t) {
   const response = await this.act('role:Engagements,cmd:create', {
@@ -82,7 +83,56 @@ test('remove', async function(t) {
   t.equal(assAfter.length, 0)
 })
 
-test('update', async function(t) {
+test('update / volunteer', async function(t) {
+  const response = await this.act('role:Engagements,cmd:update,userRole:volunteer', {key: 'volunteer', values: {
+    answer: 'yes no wait?',
+    oppKey: 'greatOpp',
+    isAssigned: true,
+    isAccepted: true,
+    isConfirmed: true,
+    amountPaid: 5000,
+    isPaid: true,
+    paymentClientToken: 'dontbeafool',
+  }})
+
+  t.ok(response.key)
+
+  const {engagement: eng} = await this.act('role:Firebase,cmd:get', {engagement: response.key})
+  t.ok(eng)
+  t.equal(eng.answer, 'yes no wait?', 'can update answer')
+  t.equal(eng.oppKey, 'oppOne', 'cannot change opp')
+  t.equal(eng.isAssigned, true, 'can change isAssigned')
+  t.equal(eng.isAccepted, false, 'cannot change isAccepted')
+  t.equal(eng.isConfirmed, false, 'cannot confirm themself')
+  t.notOk(eng.amountPaid, 'cannot set paid amount')
+  t.notOk(eng.isPaid, 'cannot mark isPaid')
+  t.equal(eng.paymentClientToken, 'imaprettyboy', 'cannot change payment token')
+})
+
+test('update / project owner', async function(t) {
+  const response = await this.act('role:Engagements,cmd:update,userRole:project', {key: 'volunteer', values: {
+    answer: 'yes no wait?',
+    oppKey: 'greatOpp',
+    isAssigned: true,
+    isAccepted: true,
+    isConfirmed: true,
+    amountPaid: 5000,
+    isPaid: true,
+    paymentClientToken: 'dontbeafool',
+  }})
+
+  t.ok(response.key)
+
+  const {engagement: eng} = await this.act('role:Firebase,cmd:get', {engagement: response.key})
+  t.ok(eng)
+  t.equal(eng.answer, 'the proof is in the pudding', 'cannot update answer')
+  t.equal(eng.oppKey, 'oppOne', 'cannot change opp')
+  t.equal(eng.isAssigned, true, 'can change isAssigned')
+  t.equal(eng.isAccepted, true, 'can change isAccepted')
+  t.equal(eng.isConfirmed, false, 'cannot confirm manually')
+  t.notOk(eng.amountPaid, 'cannot set paid amount')
+  t.notOk(eng.isPaid, 'cannot mark isPaid')
+  t.equal(eng.paymentClientToken, 'imaprettyboy', 'cannot change payment token')
 })
 
 test('confirmWithoutPay', async function(t) {

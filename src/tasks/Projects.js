@@ -1,3 +1,5 @@
+import defaults from './defaults'
+
 function actions() {
   this.add('role:Projects,cmd:create', async function({profile, values}) {
     return await this.act('role:Firebase,model:Projects,cmd:push', {values: {
@@ -6,13 +8,8 @@ function actions() {
     }})
   })
 
-  this.add({role:'Projects',cmd:'remove'}, async function({key}) {
-    return await this.act('role:Firebase,model:Projects,cmd:remove', {key})
-  })
-
-  this.add({role:'Projects',cmd:'update'}, async function({key, values}) {
-    return await this.act('role:Firebase,model:Projects,cmd:update', {key, values})
-  })
+  return defaults(this, 'Projects')
+    .init('remove', 'update')
 }
 
 export default actions

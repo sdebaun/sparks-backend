@@ -223,3 +223,32 @@ test('Auth / Profiles create', async function(t) {
   accepts({...msg, uid:'eap'})
   accepts({...msg, uid:'admin'})
 }
+
+{
+  const msg = {model:'Engagements',cmd:'update',key:'volunteer'}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+
+  test('Engagements / update / sets volunteer role', async function(t) {
+    const response = await this.act({role:'Auth',...msg,uid:'volunteer'})
+    t.equal(response.userRole, 'volunteer')
+  })
+
+  test('Engagements / update / sets project role', async function(t) {
+    const eap = await this.act({role:'Auth',...msg,uid:'eap'})
+    t.equal(eap.userRole, 'project')
+
+    const organizer = await this.act({role:'Auth',...msg,uid:'organizer'})
+    t.equal(organizer.userRole, 'project')
+
+    const admin = await this.act({role:'Auth',...msg,uid:'admin'})
+    t.equal(admin.userRole, 'project')
+  })
+}

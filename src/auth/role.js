@@ -101,7 +101,7 @@ export default function() {
     return pass(
       createProjectRules,
       'User cannot create project',
-      {profile}
+      {profile, userRole: 'project'}
     )
   })
 
@@ -115,7 +115,7 @@ export default function() {
     return pass(
       updateProjectRules,
       'User cannot update project',
-      objects
+      {...objects, userRole: 'project'}
     )
   })
 
@@ -128,7 +128,7 @@ export default function() {
     return pass(
       removeProjectRules,
       'User cannot remove project',
-      objects
+      {...objects, userRole: 'project'}
     )
   })
 
@@ -312,6 +312,20 @@ export default function() {
 
     if (profile.$key === values.profileKey) {
       return {profile}
+    } else {
+      return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+    }
+  })
+
+  add('role:Auth,model:Engagements,cmd:update', async function({uid, key}) {
+    const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
+      profile: {uid},
+      engagement: key,
+      opp: ['engagement', 'oppKey'],
+    })
+
+    if (profile.$key === engagement.profileKey) {
+      return {profile, engagement, userRole: 'volunteer'}
     } else {
       return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
     }

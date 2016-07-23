@@ -1,6 +1,6 @@
 import Promise from 'bluebird'
 import {
-  prop, pathOr, tap, compose, sum, applySpec, map,
+  prop, pathOr, tap, compose, sum, applySpec, map, pick,
 } from 'ramda'
 import defaults from './defaults'
 
@@ -77,26 +77,32 @@ function actions() {
       .then(() => respond(null, engagement))
       .catch(err => respond(err)))
 
-  this.add({role:'Engagements',cmd:'update'}, ({key, values, uid}, respond) =>
-    seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values})
-      .then(() => seneca.act('role:Firebase,cmd:get', {engagement: key}))
-      .then(({engagement}) => {
-        if (values.isAccepted) {
-          this.act({
-            role:'Engagements',
-            cmd:'sendEmail',
-            email:'accepted',
-            key,
-            engagement,
-            uid,
-          }, err => err ? console.error(err) : null)
-        }
-        return engagement
+  this.add({role:'Engagements',cmd:'update'}, async function({key, values, uid, userRole}) {
+    const allowedFields = {
+      volunteer: ['answer', 'isAssigned'],
+      project: ['isAssigned', 'isAccepted', 'priority', 'declined'],
+    }[userRole] || []
+
+    await this.act('role:Firebase,model:Engagements,cmd:update', {key, values: pick(allowedFields, values)})
+    const {engagement} = await this.act('role:Firebase,cmd:get', {engagement: key})
+
+    if (values.isAccepted) {
+      await this.act({
+        role:'Engagements',
+        cmd:'sendEmail',
+        email:'accepted',
+        key,
+        engagement,
+        uid,
       })
-      .then(({isAssigned, isPaid}) => Boolean(isAssigned && isPaid))
-      .then(isConfirmed => seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {isConfirmed}}))
-      .then(() => respond(null, {key}))
-      .catch(err => respond(err)))
+    }
+
+    const {isAssigned, isPaid} = engagement
+    const isConfirmed = Boolean(isAssigned && isPaid)
+    await this.act('role:Firebase,model:Engagements,cmd:update', {key, values: {isConfirmed}})
+
+    return {key}
+  })
 
   const extractAmount = s =>
     parseInt(`${s}`.replace(/[^0-9\.]/g, ''), 10)
