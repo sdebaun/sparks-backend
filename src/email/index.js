@@ -4,22 +4,22 @@ const sendgrid = SendGrid(process.env.SENDGRID_KEY)
 const DOMAIN = process.env.DOMAIN
 
 function actions() {
-  const seneca = this
+  function sendGridSend(email) {
+    return new Promise(function(resolve, reject) {
+      sendgrid.send(email, (err, json) => {
+        if (err) { return reject(err) }
+        return resolve(json)
+      })
+    })
+  }
 
-  this.add({role:'email',cmd:'getInfo'},
-          ({key, oppKey, profileKey, uid}, respond) =>
-    seneca.act({role:'Firebase',cmd:'get',
+  this.add({role:'email',cmd:'send',email:'engagement'}, async function({profileKey, oppKey, key, templateId, subject, sendAt = false}) {
+    const {profile, opp, project} = this.act('role:Firebase,cmd:get', {
       profile: profileKey,
       opp: oppKey,
       project: ['opp', 'projectKey'],
-    }).then(({profile, opp, project}) =>
-      respond(null, {project, opp, profile, key, uid, profileKey})))
+    })
 
-  this.add({role:'email',cmd:'send',email:'engagement'},
-  (
-    {profile, project, opp, key, uid, templateId, subject, sendAt = false},
-    respond
-  ) => {
     const email = new sendgrid.Email()
     email.addTo(profile.email)
     email.subject = subject + ` ${project.name}`
@@ -36,18 +36,10 @@ function actions() {
 
     if (sendAt) { email.setSendAt(sendAt) }
 
-    sendgrid.send(email, (err, json) => {
-      if (err) {
-        console.error(err)
-        return respond(err)
-      }
-      console.log(json)
-      respond(null, json)
-    })
+    return await sendGridSend(email)
   })
 
-  this.add({role:'email',cmd:'send',email:'organizer'},
-  ({values, project, key, templateId, subject, sendAt = false}, respond) => {
+  this.add({role:'email',cmd:'send',email:'organizer'}, async function({values, project, key, templateId, subject, sendAt = false}) {
     const email = new sendgrid.Email()
     email.addTo(values.inviteEmail)
     email.subject = subject + ` ${project.name}`
@@ -63,14 +55,7 @@ function actions() {
 
     if (sendAt) { email.setSendAt(sendAt) }
 
-    sendgrid.send(email, (err, json) => {
-      if (err) {
-        console.error(err)
-        return respond(err)
-      }
-
-      respond(null, json)
-    })
+    return await sendGridSend(email)
   })
 
   return 'Emails'

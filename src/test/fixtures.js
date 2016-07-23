@@ -178,6 +178,24 @@ export function Engagements() {
   return 'Engagements'
 }
 
+export function Assignments() {
+  const assignments = {
+    volunteerShiftOne: {
+      engagementKey: 'volunteer',
+      oppKey: 'oppOne',
+      profileKey: 'volunteer',
+      shiftKey: 'shiftOne',
+      teamKey: 'testTeam',
+    },
+  }
+
+  this.add('init:Assignments', async function() {
+    await this.act('role:Fixtures,cmd:set',{fixtures:{assignments}})
+  })
+
+  return 'Assignments'
+}
+
 export default function() {
   this
     .use(Profiles)
@@ -188,5 +206,6 @@ export default function() {
     .use(Arrivals)
     .use(Opps)
     .use(Engagements)
+    .use(Assignments)
   return 'fixtures'
 }

@@ -41,6 +41,7 @@ function tape(namespace, plugins) {
   }
 
   test.only = (msg, fn) => test(msg, fn, tapeTest.only)
+  test.seneca = seneca
 
   return test
 }

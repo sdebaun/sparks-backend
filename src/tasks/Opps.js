@@ -19,21 +19,13 @@ function actions() {
             engagements.forEach(a => {
               seneca.act({
                 role:'email',
-                cmd:'getInfo',
-                key: a.$key,
+                cmd:'send',
+                email:'engagement',
+                templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+                subject: 'Application accepted for',
                 profileKey: a.profileKey,
-                uid,
                 oppKey: key,
               })
-              .then(info =>
-                seneca.act({
-                  role:'email',
-                  cmd:'send',
-                  email:'engagement',
-                  templateId: 'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-                  subject: 'Application accepted for',
-                  ...info,
-                }))
             })
           })
       })

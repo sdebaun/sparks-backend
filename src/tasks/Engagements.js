@@ -4,11 +4,12 @@ import {
 } from 'ramda'
 import defaults from './defaults'
 
-function actions({gateway}) {
+function actions() {
   const seneca = this
 
-  this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey, uid}) {
-    const clientToken = await gateway.generateClientToken()
+  this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey}) {
+    const {clientToken} = await this.act('role:braintree,cmd:generateClientToken')
+
     const {key} = await this.act('role:Firebase,model:Engagements,cmd:push', {values: {
       oppKey,
       profileKey,
@@ -18,22 +19,14 @@ function actions({gateway}) {
       paymentClientToken: clientToken,
     }})
 
-    const info = await this.act({
-      role:'email',
-      cmd:'getInfo',
-      key,
-      profileKey: profileKey,
-      uid,
-      oppKey: oppKey,
-    })
-
     await this.act({
       role:'email',
       cmd:'send',
       email:'engagement',
       templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
       subject:'New Engagement for',
-      ...info,
+      profileKey,
+      oppKey,
     })
 
     return {key}
@@ -68,30 +61,21 @@ function actions({gateway}) {
 
   this.add({role:'Engagements',cmd:'sendEmail',email:'accepted'},
           ({key, engagement, uid}, respond) =>
-    Promise.props({
-      confirmationsOn: OppConfirmationsOn(engagement.oppKey),
-      emailInfo: seneca.act({
-        role:'email',
-        cmd:'getInfo',
-        key,
-        profileKey: engagement.profileKey,
-        oppKey: engagement.oppKey,
-        uid,
-      }),
-    })
-    .then(({confirmationsOn, emailInfo}) =>
-      confirmationsOn ?
-        seneca.act({
-          role:'email',
-          cmd:'send',
-          email:'engagement',
-          templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-          subject:'Application accepted for',
-          ...emailInfo,
-        }) : null
-      )
-    .then(() => respond(null, engagement))
-    .catch(err => respond(err)))
+    OppConfirmationsOn(engagement.oppKey)
+      .then(confirmationsOn =>
+        confirmationsOn ?
+          seneca.act({
+            role:'email',
+            cmd:'send',
+            email:'engagement',
+            templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+            subject:'Application accepted for',
+            profileKey: engagement.profileKey,
+            oppKey: engagement.oppKey,
+          }) : null
+        )
+      .then(() => respond(null, engagement))
+      .catch(err => respond(err)))
 
   this.add({role:'Engagements',cmd:'update'}, ({key, values, uid}, respond) =>
     seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values})
@@ -123,12 +107,9 @@ function actions({gateway}) {
   const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
   const makePayment = ({values, key}) => payAmount =>
-    gateway.createTransaction({
+    seneca.act('role:braintree,cmd:createTransaction', {
       amount: payAmount,
-      paymentMethodNonce: values.paymentNonce,
-    }, {
-      // verifyCard: true,
-      submitForSettlement: true,
+      nonce: values.paymentNonce,
     })
     .then(tap(result => console.log('braintree result:', result.success, result.transaction.status))) // eslint-disable-line max-len
     .then(({success, transaction}) =>
@@ -216,20 +197,13 @@ function actions({gateway}) {
           ({key, engagement, uid}, respond) =>
     seneca.act({
       role:'email',
-      cmd:'getInfo',
-      key,
-      profileKey: engagement.profileKey,
-      oppKey: engagement.oppKey,
-      uid,
-    })
-    .then(info => seneca.act({
-      role:'email',
       cmd:'send',
       email:'engagement',
       subject: 'Your are confirmed for',
       templateId: 'b1180393-8841-4cf4-9bbd-4a8602a976ef',
-      ...info,
-    }))
+      profileKey: engagement.profileKey,
+      oppKey: engagement.oppKey,
+    })
     //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))

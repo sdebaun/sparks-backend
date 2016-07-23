@@ -1,5 +1,6 @@
 import snFirebase from './firebase-sn'
 import firebaseGet from './firebase-get'
+import braintree from './braintree'
 import auth from './auth'
 import tasks from './tasks'
 import email from './email'
@@ -21,15 +22,16 @@ const collections = [
   'TeamImages',
 ]
 
-export default function({cfg, remote}) {
+export default function({cfg}) {
   const seneca = this
   seneca.use(snFirebase, {cfg, collections})
   seneca.use(firebaseGet)
   seneca.use(email)
+  seneca.use(braintree, cfg)
 
   seneca.ready(() => {
     seneca.act({role:'Firebase',cmd:'Models'}, (err, {models}) => {
-      remote.models = models
+      const remote = {models}
 
       seneca.use(tasks, remote)
       seneca.ready(() => {
