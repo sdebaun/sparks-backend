@@ -119,7 +119,22 @@ export function Shifts() {
   return 'Shifts'
 }
 
+export function Arrivals() {
+  const arrivals = {
+    volunteer: {
+      projectKey: 'testFest',
+      profileKey: 'volunteer',
+    },
+  }
+
+  this.add('init:Arrivals', async function() {
+    await this.act('role:Fixtures,cmd:set',{fixtures:{arrivals}})
+  })
+
+  return 'Arrivals'
+}
+
 export default function() {
-  this.use(Profiles).use(Projects).use(Organizers).use(Teams).use(Shifts)
+  this.use(Profiles).use(Projects).use(Organizers).use(Teams).use(Shifts).use(Arrivals)
   return 'fixtures'
 }

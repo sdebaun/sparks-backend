@@ -276,4 +276,17 @@ export default function() {
 
     return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
   })
+
+  add('role:Auth,model:Arrivals', async function(msg) {
+    let projectKey
+
+    if (msg.key) {
+      const {arrival} = await this.act('role:Firebase,cmd:get', {arrival:msg.key})
+      projectKey = arrival.projectKey
+    } else {
+      projectKey = msg.values.projectKey
+    }
+
+    return await this.act('role:Auth,model:Projects,cmd:update', {uid: msg.uid, key: projectKey})
+  })
 }

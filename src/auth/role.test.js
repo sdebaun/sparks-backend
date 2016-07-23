@@ -5,14 +5,14 @@ import role from './role'
 const test = tape('Auth', [role])
 
 function accepts(msg, testFn = test) {
-  testFn(`${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
+  testFn(`${msg.model} ${msg.cmd} / accepts ${msg.uid}`, async function(t) {
     const response = await this.act({role:'Auth',...msg})
     t.false(response.reject, 'it is accepted')
   })
 }
 
 function rejects(msg, testFn = test) {
-  testFn(`${msg.model} ${msg.cmd} / ${msg.uid}`, async function(t) {
+  testFn(`${msg.model} ${msg.cmd} / rejects ${msg.uid}`, async function(t) {
     const response = await this.act({role:'Auth',...msg})
     t.ok(response.reject, 'it is rejected')
   })
@@ -186,4 +186,21 @@ test('Auth / Profiles create', async function(t) {
   accepts({...msg, uid:'organizer'})
   accepts({...msg, uid:'eap'})
   accepts({...msg, uid:'admin'})
+}
+
+{
+  const msgs = [
+    {cmd:'create',values:{projectKey:'testFest',profileKey:'volunteer'}},
+    {cmd:'remove',key:'volunteer'},
+  ]
+
+  for (let pmsg of msgs) {
+    const msg = {...pmsg, model:'Arrivals', role:'Auth'}
+    rejects({...msg, uid:'123'})
+    rejects({...msg, uid:'volunteer'})
+    rejects({...msg, uid:'teamLead'})
+    accepts({...msg, uid:'organizer'})
+    accepts({...msg, uid:'eap'})
+    accepts({...msg, uid:'admin'})
+  }
 }
