@@ -68,6 +68,39 @@ test('Auth / Profiles create', async function(t) {
 }
 
 {
+  const msg = {model:'Opps',cmd:'create',values:{projectKey:'testFest'}}
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'volunteer'})
+  rejects({...msg, uid:'teamLead'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Opps',cmd:'update',key:'oppOne'}
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'volunteer'})
+  rejects({...msg, uid:'teamLead'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Opps',cmd:'remove',key:'oppOne'}
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'volunteer'})
+  rejects({...msg, uid:'teamLead'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
   const msg = {model:'Teams',cmd:'create',values:{projectKey:'testFest'}}
   rejects(msg)
   rejects({...msg, uid:'123'})

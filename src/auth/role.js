@@ -173,11 +173,11 @@ export default function() {
     return await this.act({...msg, role:'Auth',model:'Teams',cmd:'update',key:msg.key})
   })
 
-  add('role:Auth,cmd:update,model:Opps', async function({uid, values}) {
+  add('role:Auth,cmd:create,model:Opps', async function({uid, values}) {
     return await this.act('role:Auth,cmd:update,model:Projects', {uid, key: values.projectKey})
   })
 
-  add({role:'Auth',cmd:'update',model:'Opps'}, async function({uid, key, oppKey}) {
+  add({role:'Auth',model:'Opps'}, async function({uid, key, oppKey}) {
     const {profile, opp, project, organizers} = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
       opp: oppKey || key,
