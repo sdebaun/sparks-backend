@@ -134,9 +134,3 @@ test('update / project owner', async function(t) {
   t.notOk(eng.isPaid, 'cannot mark isPaid')
   t.equal(eng.paymentClientToken, 'imaprettyboy', 'cannot change payment token')
 })
-
-test('confirmWithoutPay', async function(t) {
-})
-
-test('pay', async function(t) {
-})
