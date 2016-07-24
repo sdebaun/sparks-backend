@@ -317,7 +317,21 @@ export default function() {
     }
   })
 
-  add('role:Auth,model:Engagements,cmd:update', async function({uid, key}) {
+  add('role:Auth,model:Assignments', async function({uid, key}) {
+    const {profile, assignment, opp} = await this.act('role:Firebase,cmd:get', {
+      profile: {uid},
+      assignment: key,
+      opp: ['assignment', 'oppKey'],
+    })
+
+    if (profile.$key === assignment.profileKey) {
+      return {profile}
+    } else {
+      return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+    }
+  })
+
+  add('role:Auth,model:Engagements', async function({uid, key, cmd}) {
     const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
       profile: {uid},
       engagement: key,
@@ -326,9 +340,35 @@ export default function() {
 
     if (profile.$key === engagement.profileKey) {
       return {profile, engagement, userRole: 'volunteer'}
+    } else if (cmd === 'update' || cmd === 'remove') {
+      return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
+    } else if (profile.isAdmin) {
+      return {profile, engagement, userRole: 'project'}
+    }
+
+    return {reject: 'Not authorized to modify engagement'}
+  })
+
+  add('role:Auth,model:Memberships,cmd:create', async function({uid, values}) {
+    const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
+      profile: {uid},
+      engagement: values.engagementKey,
+      opp: ['engagement', 'oppKey'],
+    })
+
+    assert(profile, 'Profile not found')
+    assert(engagement, 'Engagement not found')
+
+    if (profile.$key === engagement.profileKey) {
+      return {profile, engagement, userRole: 'volunteer'}
     } else {
       return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
     }
+  })
+
+  add('role:Auth,model:Memberships', async function({uid, key}) {
+    const {membership} = await this.act('role:Firebase,cmd:get', {membership: key})
+    return await this.act('role:Auth,model:Engagements,cmd:update', {uid, key: membership.engagementKey})
   })
 
   this.wrap('role:Auth', async function(msg) {

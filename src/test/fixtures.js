@@ -202,6 +202,26 @@ export function Assignments() {
   return 'Assignments'
 }
 
+export function Memberships() {
+  const memberships = {
+    volunteerTestTeam: {
+      engagementKey: 'volunteer',
+      isAccepted: false,
+      isApplied: true,
+      isConfirmed: false,
+      isDeclined: false,
+      oppKey: 'oppOne',
+      teamKey: 'testTeam',
+    },
+  }
+
+  this.add('init:Memberships', async function() {
+    await this.act('role:Fixtures,cmd:set',{fixtures:{memberships}})
+  })
+
+  return 'Memberships'
+}
+
 export default function() {
   this
     .use(Profiles)
@@ -213,5 +233,6 @@ export default function() {
     .use(Opps)
     .use(Engagements)
     .use(Assignments)
+    .use(Memberships)
   return 'fixtures'
 }

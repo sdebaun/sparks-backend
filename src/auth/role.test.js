@@ -225,6 +225,44 @@ test('Auth / Profiles create', async function(t) {
 }
 
 {
+  const msg = {model:'Assignments',cmd:'update',key:'volunteerShiftOne'}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Assignments',cmd:'remove',key:'volunteerShiftOne'}
+  rejects(msg)
+  rejects({...msg, uid: '123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Engagements',cmd:'create',key:'volunteer',values:{oppKey: 'oppOne', profileKey: 'volunteer'}}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  rejects({...msg, uid:'organizer'})
+  rejects({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
   const msg = {model:'Engagements',cmd:'update',key:'volunteer'}
 
   rejects(msg)
@@ -251,4 +289,62 @@ test('Auth / Profiles create', async function(t) {
     const admin = await this.act({role:'Auth',...msg,uid:'admin'})
     t.equal(admin.userRole, 'project')
   })
+}
+
+{
+  const msg = {model:'Engagements',key:'volunteer'}
+
+  for (let cmd of ['confirmWithoutPay', 'pay']) {
+    msg.cmd = cmd
+
+    rejects(msg)
+    rejects({...msg, uid:'123'})
+    rejects({...msg, uid:'teamLead'})
+    rejects({...msg, uid:'volTwo'})
+    rejects({...msg, uid:'eap'})
+    rejects({...msg, uid:'organizer'})
+    accepts({...msg, uid:'volunteer'})
+    accepts({...msg, uid:'admin'})
+  }
+}
+
+{
+  const msg = {model:'Memberships',cmd:'create',key:'volunteer',values:{
+    engagementKey:'volunteer',oppKey:'oppOne',teamKey:'testTeam'}}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Memberships',cmd:'update',key:'volunteer',key:'volunteerTestTeam', values:{
+    engagementKey:'volunteer',oppKey:'oppOne',teamKey:'testTeam'}}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
+}
+
+{
+  const msg = {model:'Memberships',cmd:'remove',key:'volunteer',key:'volunteerTestTeam'}
+
+  rejects(msg)
+  rejects({...msg, uid:'123'})
+  rejects({...msg, uid:'teamLead'})
+  rejects({...msg, uid:'volTwo'})
+  accepts({...msg, uid:'volunteer'})
+  accepts({...msg, uid:'organizer'})
+  accepts({...msg, uid:'eap'})
+  accepts({...msg, uid:'admin'})
 }
