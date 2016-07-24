@@ -3,7 +3,7 @@ import Engagements from './Engagements'
 import {append} from 'ramda'
 
 function braintree() {
-  this.add('role:braintree,cmd:generateClientToken', async function() {
+  this.add('role:gateway,cmd:generateClientToken', async function() {
     return {clientToken: 'paymenowyoubastard'}
   })
 

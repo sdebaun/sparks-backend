@@ -1,6 +1,6 @@
 import Promise from 'bluebird'
 import {
-  prop, pathOr, tap, compose, sum, applySpec, map, pick,
+  prop, pathOr, compose, sum, applySpec, map, pick,
 } from 'ramda'
 import defaults from './defaults'
 
@@ -8,7 +8,7 @@ function actions() {
   const seneca = this
 
   this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey}) {
-    const {clientToken} = await this.act('role:braintree,cmd:generateClientToken')
+    const {clientToken} = await this.act('role:gateway,cmd:generateClientToken')
 
     const {key} = await this.act('role:Firebase,model:Engagements,cmd:push', {values: {
       oppKey,
@@ -113,11 +113,10 @@ function actions() {
   const calcNonref = (pmt, dep) => (pmt + calcSparks(pmt, dep)).toFixed(2)
 
   const makePayment = ({values, key}) => payAmount =>
-    seneca.act('role:braintree,cmd:createTransaction', {
+    seneca.act('role:gateway,cmd:createTransaction', {
       amount: payAmount,
       nonce: values.paymentNonce,
     })
-    .then(tap(result => console.log('braintree result:', result.success, result.transaction.status))) // eslint-disable-line max-len
     .then(({success, transaction}) =>
       seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {
         transaction,
@@ -129,7 +128,7 @@ function actions() {
     )
     .then(() => true)
     .catch(errorResult => {
-      console.log('BRAINTREE TRANSACTION ERROR', errorResult)
+      console.log('GATEWAY TRANSACTION ERROR', errorResult)
       seneca.act('role:Firebase,model:Engagements,cmd:update', {key, values: {
         isPaid: false,
         isConfirmed: false,

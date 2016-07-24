@@ -3,18 +3,22 @@ import braintree from 'braintree-node'
 export default function(cfg) {
   let gateway
 
-  this.add('role:braintree,cmd:generateClientToken', async function() {
+  this.add('role:gateway,cmd:generateClientToken', async function() {
     const clientToken = await gateway.generateClientToken()
     return {clientToken}
   })
 
-  this.add('role:braintree,cmd:createTransaction', async function({amount, nonce}) {
-    return await gateway.createTransaction({
+  this.add('role:gateway,cmd:createTransaction', async function({amount, nonce}) {
+    const result = await gateway.createTransaction({
       amount,
       paymentMethodNonce: nonce,
     }, {
       submitForSettlement: true,
     })
+
+    console.log('braintree result:', result.success, result.transaction.status)
+
+    return result
   })
 
   this.add('init:braintree', function() {
