@@ -87,14 +87,27 @@ function pass(ruleFn, rejectionMsg, respond) {
   }
 }
 
+/**
+* Each of the actions defined here is an authorization function. If the action
+* is allowed then it returns a blank object, or an object with some records to
+* avoid double lookups.
+*
+* If the action is rejected then it will return an object with the key reject
+* containing the reason.
+*
+* There is a try/catch wrapper at the bottom of this block that will convert
+* any thrown errors into a reject message.
+*/
 export default function() {
   const seneca = this
   const add = seneca.add.bind(seneca)
 
+  // TODO: by default we allow anything?
   add({role:'Auth',default$:true}, async function (msg) {
     return await this.act({role:'Firebase',cmd:'get',profile:{uid: msg.uid}})
   })
 
+  // Projects
   add({role:'Auth',cmd:'create',model:'Projects'}, async function({uid}) {
     const {profile} = await this.act({role:'Firebase',cmd:'get',profile:{uid}})
 
@@ -132,10 +145,12 @@ export default function() {
     )
   })
 
+  // ProjectImages
   add({role:'Auth',model:'ProjectImages'}, async function({uid, key}) {
     return await this.act('role:Auth,model:Projects,cmd:update', {uid, key})
   })
 
+  // Teams
   add({role:'Auth',cmd:'remove',model:'Teams'}, async function({uid, key}) {
     const {team} = await this.act({role:'Firebase',cmd:'get',team: key})
     assert(team, `Team ${key} not found`)
@@ -169,6 +184,7 @@ export default function() {
     })
   })
 
+  // TeamImages
   add({role:'Auth',model:'TeamImages'}, async function(msg) {
     return await this.act({...msg, role:'Auth',model:'Teams',cmd:'update',key:msg.key})
   })
@@ -177,6 +193,7 @@ export default function() {
     return await this.act('role:Auth,cmd:update,model:Projects', {uid, key: values.projectKey})
   })
 
+  // Opps
   add({role:'Auth',model:'Opps'}, async function({uid, key, oppKey}) {
     const {profile, opp, project, organizers} = await this.act({role:'Firebase',cmd:'get',
       profile: {uid},
@@ -195,6 +212,7 @@ export default function() {
     )
   })
 
+  // Shifts
   add({role:'Auth',model:'Shifts'}, async function(msg) {
     if (contains(msg.cmd, ['update', 'remove'])) {
       const {shift} = await this.act({role:'Firebase',cmd:'get',shift:msg.key})
@@ -220,6 +238,7 @@ export default function() {
     })
   })
 
+  // Organizers
   add({role:'Auth',model:'Organizers'}, async function(msg) {
     const {organizer} = await this.act({role:'Firebase',cmd:'get',organizer:msg.key})
 
@@ -245,6 +264,7 @@ export default function() {
     return pass(prop('profile'), 'Must have a profile', data)
   })
 
+  // Profiles
   add({role:'Auth', model:'Profiles', cmd:'update'},
     async function({uid, key}) {
       const [myProfile, profile] = await Promise.all([
@@ -265,6 +285,7 @@ export default function() {
     return {}
   })
 
+  // Commitments
   add({role:'Auth', model:'Commitments'}, async function({uid, key}) {
     const {opp} = await this.act('role:Firebase,cmd:get', {
       commitment: key,
@@ -279,6 +300,7 @@ export default function() {
     return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
   })
 
+  // Arrivals
   add('role:Auth,model:Arrivals', async function(msg) {
     let projectKey
 
@@ -292,6 +314,7 @@ export default function() {
     return await this.act('role:Auth,model:Projects,cmd:update', {uid: msg.uid, key: projectKey})
   })
 
+  // Fulfillers
   add('role:Auth,model:Fulfillers', async function({uid, key, values}) {
     const oppKey =
       key ?
@@ -301,6 +324,7 @@ export default function() {
     return await this.act('role:Auth,model:Opp,cmd:update', {uid, key: oppKey})
   })
 
+  // Assignments
   add('role:Auth,model:Assignments,cmd:create', async function({uid, values}) {
     const {profile, opp} = await this.act('role:Firebase,cmd:get', {
       profile: {uid},
@@ -331,6 +355,7 @@ export default function() {
     }
   })
 
+  // Engagements
   add('role:Auth,model:Engagements', async function({uid, key, cmd}) {
     const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
       profile: {uid},
@@ -349,6 +374,7 @@ export default function() {
     return {reject: 'Not authorized to modify engagement'}
   })
 
+  // Memberships
   add('role:Auth,model:Memberships,cmd:create', async function({uid, values}) {
     const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
       profile: {uid},
@@ -371,6 +397,9 @@ export default function() {
     return await this.act('role:Auth,model:Engagements,cmd:update', {uid, key: membership.engagementKey})
   })
 
+  /*
+  * Try/catch wrapper that converts errors into rejections
+  */
   this.wrap('role:Auth', async function(msg) {
     try {
       return await this.prior(msg)

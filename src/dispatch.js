@@ -16,6 +16,9 @@ const buildResponse = (domain, event, payload) => ({
   domain, event, payload: payload || false,
 })
 
+/**
+* Process the firebase queue and turn messages there into seneca tasks.
+*/
 export const startDispatch = (ref, seneca) => {
   const respond = (uid, response) => {
     log('responding with', response)
@@ -33,6 +36,8 @@ export const startDispatch = (ref, seneca) => {
     console.log('Auth', pattern)
 
     try {
+      // Perform authorization on the call. If the auth returns an object with
+      // reject then this message won't be processed.
       const auth = await seneca.act({
         ...pattern,
         role: 'Auth',
