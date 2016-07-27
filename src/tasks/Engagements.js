@@ -88,7 +88,7 @@ function actions({gateway, models}) {
           cmd:'send',
           email:'engagement',
           templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-          subject:'Application acceted for',
+          subject:'Application accepted for',
           ...emailInfo,
         }) : null
       )
@@ -169,8 +169,12 @@ function actions({gateway, models}) {
         Engagements.child(key).update({
           isPaid: true,
           isConfirmed: true,
-        }))
-      .then(() => act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement}))
+        })
+      )
+      .then(() => {
+        // Send the email in the background
+        act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement})
+      })
       .then(() => respond(null, {key}))
     )
     .catch(err => respond(err))
@@ -193,7 +197,8 @@ function actions({gateway, models}) {
     .then(tap(c => console.log('payment amounts found', c)))
     .then(makePayment({key, values}))
     .then(() => Engagements.get(key))
-    .then(engagement =>
+    .then(engagement => {
+      // Send the email in the background
       act({
         role:'Engagements',
         cmd:'sendEmail',
@@ -201,8 +206,8 @@ function actions({gateway, models}) {
         key,
         uid,
         engagement,
-      }, err => err ? console.error(err) : null)
-    )
+      })
+    })
     .then(() => respond(null, {key}))
     .catch(err => respond(err)))
 
