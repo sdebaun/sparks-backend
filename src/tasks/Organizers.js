@@ -50,8 +50,7 @@ function actions({auths: {userCanUpdateProject}, models: {Organizers}, getStuff}
     profile &&
     organizer &&
     not(organizer.isAccepted) &&
-    not(organizer.profileKey) &&
-    equals(organizer.inviteEmail, profile.email)
+    not(organizer.profileKey)
 
   const rejectCannotAccept = unless(canAccept, ({profile, organizer}) =>
     Promise.reject(
