@@ -1,7 +1,7 @@
-import {not, unless, equals, merge} from 'ramda'
+import {not, unless, merge} from 'ramda'
 import defaults from './defaults'
 
-function actions() {
+function Organizers() {
   const seneca = this
 
   this.add({role:'Organizers',cmd:'sendEmail'}, ({key, uid}, respond) =>
@@ -59,9 +59,6 @@ function actions() {
       }})
     .then(() => respond(null, {key}))
     .catch(err => respond(err))))
-
-  return defaults(this, 'Organizers')
-    .init('remove')
 }
 
-export default actions
+export default defaults(Organizers, 'remove')

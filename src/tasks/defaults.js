@@ -17,16 +17,19 @@ const defaultActions = {
     })},
 }
 
-function defaults(seneca, name) {
-  function init(...actions) {
+function defaults(fn, ...actions) {
+  const name = fn.name
+
+  return function() {
+    const seneca = this
+
     for (let action of actions) {
       defaultActions[action].bind(seneca)(name)
     }
 
+    fn.call(seneca)
     return name
   }
-
-  return {init}
 }
 
 export default defaults

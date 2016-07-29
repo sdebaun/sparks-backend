@@ -1,10 +1,11 @@
 import Promise from 'bluebird'
 import {join, always, when, prop} from 'ramda'
+import defaults from './defaults'
 
 const joinedKeys = (projectKey, profileKey) =>
   join('-', [projectKey, profileKey])
 
-function actions() {
+function Arrivals() {
   this.add(
     {role:'Arrivals',cmd:'create'},
     ({uid, profile, profileKey, projectKey}, respond) =>
@@ -23,4 +24,4 @@ function actions() {
         .then(({key}) => respond(null, {key})))
 }
 
-export default actions
+export default defaults(Arrivals)

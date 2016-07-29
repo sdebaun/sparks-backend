@@ -1,6 +1,6 @@
 import defaults from './defaults'
 
-function actions() {
+function Shifts() {
   this.wrap('role:Shifts,cmd:create', async function(msg) {
     return await this.prior({...msg, values: {...msg.values, ownerProfileKey: msg.profile.$key}})
   })
@@ -23,9 +23,7 @@ function actions() {
 
     return {assigned: assignments.length}
   })
-
-  return defaults(this, 'Shifts')
-    .init('create', 'update', 'remove')
 }
 
-export default actions
+export default defaults(Shifts, 'create', 'update', 'remove')
+

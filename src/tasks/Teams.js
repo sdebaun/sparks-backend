@@ -1,12 +1,9 @@
 import defaults from './defaults'
 
-function actions() {
+function Teams() {
   this.wrap('role:Teams,cmd:create', async function(msg) {
     return await this.prior({...msg, values: {...msg.values, ownerProfileKey: msg.profile.$key}})
   })
-
-  return defaults(this, 'Teams')
-    .init('create', 'remove', 'update')
 }
 
-export default actions
+export default defaults(Teams, 'create', 'remove', 'update')

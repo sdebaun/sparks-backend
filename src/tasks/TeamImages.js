@@ -1,8 +1,6 @@
 import defaults from './defaults'
 
-function actions() {
-  return defaults(this, 'TeamImages')
-    .init('set', 'remove')
+function TeamImages() {
 }
 
-export default actions
+export default defaults(TeamImages, 'set', 'remove')

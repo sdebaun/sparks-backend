@@ -1,8 +1,6 @@
 import defaults from './defaults'
 
-function actions() {
-  return defaults(this, 'ProjectImages')
-    .init('set', 'remove')
+function ProjectImages() {
 }
 
-export default actions
+export default defaults(ProjectImages, 'set', 'remove')

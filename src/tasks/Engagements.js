@@ -4,7 +4,7 @@ import {
 } from 'ramda'
 import defaults from './defaults'
 
-function actions() {
+function Engagements() {
   const seneca = this
 
   this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey}) {
@@ -219,8 +219,6 @@ function actions() {
     await ref.transaction(count => (count || 0) + by)
     return {key}
   })
-
-  return defaults(this, 'Engagements').init()
 }
 
-export default actions
+export default defaults(Engagements)

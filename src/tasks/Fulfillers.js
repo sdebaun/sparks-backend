@@ -1,8 +1,6 @@
 import defaults from './defaults'
 
-function actions() {
-  return defaults(this, 'Fulfillers')
-    .init('create', 'remove', 'update')
+function Fulfillers() {
 }
 
-export default actions
+export default defaults(Fulfillers, 'create', 'update', 'remove')

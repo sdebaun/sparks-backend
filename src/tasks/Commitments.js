@@ -1,8 +1,6 @@
 import defaults from './defaults'
 
-function actions() {
-  return defaults(this, 'Commitments')
-    .init('create', 'update', 'remove')
+function Commitments() {
 }
 
-export default actions
+export default defaults(Commitments, 'create', 'update', 'remove')

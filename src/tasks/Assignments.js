@@ -1,7 +1,8 @@
 import Promise from 'bluebird'
 import {propEq} from 'ramda'
+import defaults from './defaults'
 
-function actions() {
+function Assignments() {
   const seneca = this
   const act = Promise.promisify(this.act, {context: this})
 
@@ -74,4 +75,4 @@ function actions() {
   }
 }
 
-export default actions
+export default defaults(Assignments)
