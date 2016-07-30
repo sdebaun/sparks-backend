@@ -55,27 +55,23 @@ function Engagements() {
     return {key}
   })
 
-  const OppConfirmationsOn = oppKey =>
-    seneca.act('role:Firebase,cmd:get', {opp: oppKey})
-      .then(({opp}) => opp.confirmationsOn || false)
+  this.add('role:Engagements,cmd:sendEmail,email:accepted', async function({engagement}) {
+    const {opp} = this.act('role:Firebase,cmd:get', {opp: engagement.oppKey})
 
-  this.add({role:'Engagements',cmd:'sendEmail',email:'accepted'},
-          ({key, engagement, uid}, respond) =>
-    OppConfirmationsOn(engagement.oppKey)
-      .then(confirmationsOn =>
-        confirmationsOn ?
-          seneca.act({
-            role:'email',
-            cmd:'send',
-            email:'engagement',
-            templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
-            subject:'Application accepted for',
-            profileKey: engagement.profileKey,
-            oppKey: engagement.oppKey,
-          }) : null
-        )
-      .then(() => respond(null, engagement))
-      .catch(err => respond(err)))
+    if (opp.confirmationsOn) {
+      await this.act({
+        role:'email',
+        cmd:'send',
+        email:'engagement',
+        templateId:'dec62dab-bf8e-4000-975a-0ef6b264dafe',
+        subject:'Application accepted for',
+        profileKey: engagement.profileKey,
+        oppKey: engagement.oppKey,
+      })
+    }
+
+    return {engagement}
+  })
 
   this.add({role:'Engagements',cmd:'update'}, async function({key, values, uid, userRole}) {
     const allowedFields = {
@@ -151,12 +147,12 @@ function Engagements() {
   })
 
   async function oppTotal(oppKey) { // eslint-disable-line
-    const {commitments} = await this.act('role:Firebase,cmd:get', {commitments: {oppKey}})
+    const {commitments} = await seneca.act('role:Firebase,cmd:get', {commitments: {oppKey}})
     return commitmentsTotal(commitments)
   }
 
   async function oppAmounts(oppKey) {
-    const {commitments} = await this.act('role:Firebase,cmd:get', {commitments: {oppKey}})
+    const {commitments} = await seneca.act('role:Firebase,cmd:get', {commitments: {oppKey}})
     return commitmentsAmounts(commitments)
   }
 
@@ -198,9 +194,8 @@ function Engagements() {
     return {key}
   })
 
-  this.add({role:'Engagements',cmd:'sendEmail',email:'confirmed'},
-          ({key, engagement, uid}, respond) =>
-    seneca.act({
+  this.add({role:'Engagements',cmd:'sendEmail',email:'confirmed'}, async function({key, engagement}) {
+    await this.act({
       role:'email',
       cmd:'send',
       email:'engagement',
@@ -209,9 +204,9 @@ function Engagements() {
       profileKey: engagement.profileKey,
       oppKey: engagement.oppKey,
     })
-    //.then(info => scheduleReminderEmail(info, Assignments, Shifts))
-    .then(() => respond(null, {key}))
-    .catch(err => respond(err)))
+
+    return {key}
+  })
 
   this.add({role:'Engagements',cmd:'updateAssignmentCount'}, async function({key, by}) {
     const {model} = await this.act('role:Firebase,cmd:Model,model:Engagements')
