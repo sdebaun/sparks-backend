@@ -1,3 +1,4 @@
+import assert from 'assert'
 import SendGrid from 'sendgrid'
 
 const sendgrid = SendGrid(process.env.SENDGRID_KEY)
@@ -14,11 +15,15 @@ function actions() {
   }
 
   this.add({role:'email',cmd:'send',email:'engagement'}, async function({profileKey, oppKey, key, templateId, subject, sendAt = false}) {
-    const {profile, opp, project} = this.act('role:Firebase,cmd:get', {
+    const {profile, opp, project} = await this.act('role:Firebase,cmd:get', {
       profile: profileKey,
       opp: oppKey,
       project: ['opp', 'projectKey'],
     })
+
+    assert(profile, 'Profile not found')
+    assert(opp, 'Opp not found')
+    assert(project, 'Project not found')
 
     const email = new sendgrid.Email()
     email.addTo(profile.email)

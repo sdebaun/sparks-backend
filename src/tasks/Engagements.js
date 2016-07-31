@@ -19,10 +19,7 @@ function Engagements() {
       paymentClientToken: clientToken,
     }})
 
-    await this.act({
-      role:'email',
-      cmd:'send',
-      email:'engagement',
+    await this.act('role:email,cmd:send,email:engagement', {
       templateId: '96e36ab7-43b0-4d45-8309-32c52530bd8a',
       subject:'New Engagement for',
       profileKey,
@@ -56,7 +53,7 @@ function Engagements() {
   })
 
   this.add('role:Engagements,cmd:sendEmail,email:accepted', async function({engagement}) {
-    const {opp} = this.act('role:Firebase,cmd:get', {opp: engagement.oppKey})
+    const {opp} = await this.act('role:Firebase,cmd:get', {opp: engagement.oppKey})
 
     if (opp.confirmationsOn) {
       await this.act({
@@ -76,7 +73,7 @@ function Engagements() {
   this.add({role:'Engagements',cmd:'update'}, async function({key, values, uid, userRole}) {
     const allowedFields = {
       volunteer: ['answer', 'isAssigned'],
-      project: ['isAssigned', 'isAccepted', 'priority', 'declined'],
+      project: ['answer', 'isAssigned', 'isAccepted', 'priority', 'declined'],
     }[userRole] || []
 
     await this.act('role:Firebase,model:Engagements,cmd:update', {key, values: pick(allowedFields, values)})

@@ -355,6 +355,19 @@ export default function() {
     }
   })
 
+  add('role:Auth,model:Engagements,cmd:create', async function({uid, oppKey, profileKey}) {
+    const {profile, opp} = await this.act('role:Firebase,cmd:get', {
+      profile: {uid},
+      opp: oppKey,
+    })
+
+    if (profile.$key !== profileKey && !profile.isAdmin) {
+      return {reject: 'Cannot apply another user to this engagement'}
+    }
+
+    return {opp}
+  })
+
   // Engagements
   add('role:Auth,model:Engagements', async function({uid, key, cmd}) {
     const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
@@ -363,18 +376,28 @@ export default function() {
       opp: ['engagement', 'oppKey'],
     })
 
+    if (profile.isAdmin) {
+      return {profile, engagement, userRole: 'project'}
+    }
+
     if (profile.$key === engagement.profileKey) {
       return {profile, engagement, userRole: 'volunteer'}
-    } else if (cmd === 'update' || cmd === 'remove') {
+    }
+
+    if (cmd === 'update' || cmd === 'remove') {
       return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
-    } else if (profile.isAdmin) {
-      return {profile, engagement, userRole: 'project'}
     }
 
     return {reject: 'Not authorized to modify engagement'}
   })
 
   // Memberships
+  add('role:Auth,model:Memberships', async function({uid, key}) {
+    const {membership} = await this.act('role:Firebase,cmd:get', {membership: key})
+    assert(membership, 'Membership not found')
+    return await this.act('role:Auth,model:Engagements,cmd:update', {uid, key: membership.engagementKey})
+  })
+
   add('role:Auth,model:Memberships,cmd:create', async function({uid, values}) {
     const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
       profile: {uid},
@@ -390,11 +413,6 @@ export default function() {
     } else {
       return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
     }
-  })
-
-  add('role:Auth,model:Memberships', async function({uid, key}) {
-    const {membership} = await this.act('role:Firebase,cmd:get', {membership: key})
-    return await this.act('role:Auth,model:Engagements,cmd:update', {uid, key: membership.engagementKey})
   })
 
   /*
