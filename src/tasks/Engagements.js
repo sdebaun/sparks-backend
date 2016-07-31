@@ -1,11 +1,12 @@
 import Promise from 'bluebird'
 import {
-  prop, pathOr, compose, sum, applySpec, map, pick,
+  applySpec, compose, concat, map, pathOr, pick, prop, sum,
 } from 'ramda'
 import defaults from './defaults'
 
 function Engagements() {
   const seneca = this
+  const get = spec => seneca.act('role:Firebase,cmd:get', spec)
 
   this.add({role:'Engagements',cmd:'create'}, async function({oppKey, profileKey}) {
     const {clientToken} = await this.act('role:gateway,cmd:generateClientToken')
@@ -70,6 +71,32 @@ function Engagements() {
     return {engagement}
   })
 
+  async function canChangeOpp(engagement, oppKey, userRole) {
+    if (userRole !== 'project') { return false }
+    if (engagement.isConfirmed) { return false }
+    if (engagement.oppKey === oppKey) { return false }
+
+    const {opp: oldOpp} = await get({opp: engagement.oppKey})
+    const {opp: newOpp} = await get({opp: oppKey})
+
+    return oldOpp && newOpp && oldOpp.projectKey === newOpp.projectKey
+  }
+
+  this.add('role:Engagements,cmd:changeOpp,public$:false', async function({engagement, oppKey}) {
+    const {memberships} = await this.act('role:Firebase,cmd:get', {memberships: {engagementKey: engagement.$key}})
+
+    await Promise.all(
+      concat(
+        [this.act('role:Firebase,model:Engagements,cmd:update', {key: engagement.$key, values: {oppKey}})],
+        memberships.map(({$key}) =>
+          this.act('role:Firebase,model:Memberships,cmd:update', {key: $key, values: {oppKey}})
+        )
+      )
+    )
+
+    return {key: engagement.$key}
+  })
+
   this.add({role:'Engagements',cmd:'update'}, async function({key, values, uid, userRole}) {
     const allowedFields = {
       volunteer: ['answer', 'isAssigned'],
@@ -78,6 +105,10 @@ function Engagements() {
 
     await this.act('role:Firebase,model:Engagements,cmd:update', {key, values: pick(allowedFields, values)})
     const {engagement} = await this.act('role:Firebase,cmd:get', {engagement: key})
+
+    if (values.oppKey && await canChangeOpp(engagement, values.oppKey, userRole)) {
+      await this.act('role:Engagements,cmd:changeOpp', {engagement, oppKey: values.oppKey})
+    }
 
     if (values.isAccepted) {
       await this.act({
