@@ -184,7 +184,7 @@ function Engagements() {
 
     if (result) {
       // Send email
-      const {engagement: refreshed} = this.act('role:Firebase,cmd:get', {engagement: key})
+      const {engagement: refreshed} = await this.act('role:Firebase,cmd:get', {engagement: key})
       await this.act('role:Engagements,cmd:sendEmail,email:confirmed', {key, uid, engagement: refreshed})
     }
 

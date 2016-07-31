@@ -4,8 +4,7 @@ export default function(cfg) {
   let gateway
 
   this.add('role:gateway,cmd:generateClientToken', async function() {
-    const clientToken = await gateway.generateClientToken()
-    return {clientToken}
+    return await gateway.generateClientToken()
   })
 
   this.add('role:gateway,cmd:createTransaction', async function({amount, nonce}) {
