@@ -1,5 +1,7 @@
 function actions({models: {Memberships}, getStuff}) {
-  this.add({role:'Memberships',cmd:'create'}, ({teamKey, oppKey, engagementKey, answer}, respond) => { // eslint-disable-line max-len
+  this.add({role:'Memberships',cmd:'create'}, ({values}, respond) => { // eslint-disable-line max-len
+    const {teamKey, oppKey, engagementKey, answer} = values
+
     const key = Memberships.push({
       teamKey,
       oppKey,
