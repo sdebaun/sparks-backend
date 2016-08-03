@@ -20,6 +20,9 @@ module.exports = {
   ],
 
   scopeOverrides: {
+    chore: [
+      {name: 'META - (overall changes that affect the repo)'},
+    ]
   },
 
   allowCustomScopes: true,
