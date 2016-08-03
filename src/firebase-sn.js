@@ -62,7 +62,7 @@ export default function({collections, cfg: {FIREBASE_HOST, FIREBASE_TOKEN}}) {
     })
   }
   this.add({role:'Firebase',model:'Users',cmd:'set'}, async function({uid, profileKey}) {
-    return await models.Users.set(uid).set(profileKey)
+    return await models.Users.set(uid, profileKey)
   })
 
   /**

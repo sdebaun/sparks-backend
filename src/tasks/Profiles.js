@@ -17,12 +17,16 @@ function action() {
 
   this.add({role:'Profiles',cmd:'create'}, async function({uid, values}) {
     const {profile} = await this.act('role:Firebase,cmd:get', {profile: {uid}})
+    let key
 
     if (profile) {
-      return {key: profile.$key}
+      key = profile.$key
     } else {
-      return await makeUserAndProfile(uid, values)
+      key = await makeUserAndProfile(uid, values)
     }
+
+    await seneca.act('role:Firebase,model:Users,cmd:set', {uid, profileKey: key})
+    return {key}
   })
 
   this.add({role:'Profiles',cmd:'update',isAdmin:true}, async function({key, values}) {

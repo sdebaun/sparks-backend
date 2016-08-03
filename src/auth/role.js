@@ -101,6 +101,7 @@ function pass(ruleFn, rejectionMsg, respond) {
 export default function() {
   const seneca = this
   const add = seneca.add.bind(seneca)
+  const get = spec => this.act('role:Firebase,cmd:get', spec)
 
   // TODO: by default we allow anything?
   add({role:'Auth',default$:true}, async function (msg) {
@@ -267,10 +268,8 @@ export default function() {
   // Profiles
   add({role:'Auth', model:'Profiles', cmd:'update'},
     async function({uid, key}) {
-      const [myProfile, profile] = await Promise.all([
-        this.act({role:'Firebase',model:'Profiles',cmd:'first',by:'uid',value:uid}),
-        this.act({role:'Firebase',model:'Profiles',cmd:'get',key}),
-      ])
+      const {profile: myProfile} = await get({profile: {uid}})
+      const {profile} = await get({profile: key})
 
       if (myProfile && profile && (myProfile.isAdmin || profile.uid === uid)) {
         return {isAdmin: Boolean(myProfile.isAdmin), profile}

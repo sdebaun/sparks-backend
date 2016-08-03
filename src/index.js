@@ -10,9 +10,13 @@ app.get('/', (req,res) => res.send('Hello World!'))
 app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
 
 const seneca = Seneca({
+  // Don't crash it when an error occurs
   debug: {
     undead: true,
   },
+  // IF we do not set this then we'd have to rewrite the firebase tasks to wrap
+  // the return in an object key/pair
+  strict:{result:false},
 })
 
 seneca.use(senecaSn, {cfg})
