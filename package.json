@@ -10,7 +10,9 @@
     "postinstall": "npm run build",
     "build": "node_modules/.bin/babel -d dist src",
     "test": "node_modules/.bin/babel-tape-runner src/**/*.test.js | ./node_modules/.bin/tap-spec",
-    "watch": "watch 'npm run test' src/"
+    "watch": "watch 'npm run test' src/",
+    "commit": "git-cz",
+    "changelog": "conventional-changelog --infile CHANGELOG.md --same-file --release-count 0 --preset angular"
   },
   "repository": {
     "type": "git",
@@ -22,10 +24,22 @@
     "url": "https://github.com/sdebaun/sparks-backend/issues"
   },
   "homepage": "https://github.com/sdebaun/sparks-backend#readme",
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-customizable"
+    },
+    "cz-customizable": {
+      "config": ".cz-config.js"
+    }
+  },
   "devDependencies": {
     "babel-eslint": "^5.0.0",
     "babel-tape-runner": "^2.0.1",
     "blue-tape": "^0.2.0",
+    "commitizen": "^2.8.4",
+    "conventional-changelog": "^1.1.0",
+    "conventional-changelog-cli": "^1.2.0",
+    "cz-customizable": "^4.0.0",
     "eslint": "^1.10.3",
     "eslint-config-cycle": "^3.2.0",
     "eslint-loader": "^1.3.0",
