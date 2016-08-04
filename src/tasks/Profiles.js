@@ -22,7 +22,7 @@ function action() {
     if (profile) {
       key = profile.$key
     } else {
-      key = await makeUserAndProfile(uid, values)
+      key = (await makeUserAndProfile(uid, values)).key
     }
 
     await seneca.act('role:Firebase,model:Users,cmd:set', {uid, profileKey: key})
