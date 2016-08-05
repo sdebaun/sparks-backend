@@ -210,23 +210,6 @@ test('Auth / Profiles create', async function(t) {
 }
 
 {
-  const msgs = [
-    {cmd:'create',values:{projectKey:'testFest',profileKey:'volunteer'}},
-    {cmd:'remove',key:'volunteer'},
-  ]
-
-  for (let pmsg of msgs) {
-    const msg = {...pmsg, model:'Arrivals', role:'Auth'}
-    rejects({...msg, uid:'123'})
-    rejects({...msg, uid:'volunteer'})
-    rejects({...msg, uid:'teamLead'})
-    accepts({...msg, uid:'organizer'})
-    accepts({...msg, uid:'eap'})
-    accepts({...msg, uid:'admin'})
-  }
-}
-
-{
   const msg = {model:'Assignments',cmd:'create',values:{
     teamKey: 'testTeam',
     shiftKey: 'shiftOne',

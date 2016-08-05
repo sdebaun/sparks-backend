@@ -166,6 +166,9 @@ export function Arrivals() {
     volunteer: {
       projectKey: 'testFest',
       profileKey: 'volunteer',
+      ownerProfileKey: 'admin',
+      arrivedAt: Date.now(),
+      projectKeyProfileKey: 'testFest-volunteer',
     },
   }
 
