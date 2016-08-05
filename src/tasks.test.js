@@ -23,6 +23,7 @@ test('auth for every task', async function(t) {
 
   for (let taskPattern of tasks) {
     const task = this.find(taskPattern)
+    if (task.raw.public$ === false) { continue }
 
     const pattern = {
       role: 'Auth',
@@ -33,7 +34,7 @@ test('auth for every task', async function(t) {
     const authTask = this.find(pattern)
 
     if (authTask) {
-      const notDefault = not(authTask.priormeta.raw.default$)
+      const notDefault = not(authTask.raw.default$)
       t.ok(notDefault, `${task.plugin_fullname} / ${task.pattern} has auth task`)
     } else {
       t.fail(`${task.plugin_fullname} / ${task.pattern} has auth task`)

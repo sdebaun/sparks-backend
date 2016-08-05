@@ -74,6 +74,12 @@ export function Projects() {
       name: 'Test Fest',
       description: 'Volunteer by testing a website. Exciting stuff.',
     },
+
+    festTwo: {
+      ownerProfileKey: 'eap',
+      name: 'Fest Two',
+      description: 'A second festival',
+    },
   }
 
   this.add('init:Projects', async function() {
@@ -88,6 +94,14 @@ export function Opps() {
     oppOne: {
       projectKey: 'testFest',
       name: 'Opp One',
+    },
+    oppTwo: {
+      projectKey: 'testFest',
+      name: 'Opp two',
+    },
+    festTwoOppOne: {
+      projectKey: 'festTwo',
+      name: 'Two for One',
     },
   }
 

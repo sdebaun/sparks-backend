@@ -125,7 +125,7 @@ test('update / project owner', async function(t) {
 
   const {engagement: eng} = await this.act('role:Firebase,cmd:get', {engagement: response.key})
   t.ok(eng)
-  t.equal(eng.answer, 'the proof is in the pudding', 'cannot update answer')
+  // t.equal(eng.answer, 'the proof is in the pudding', 'cannot update answer')
   t.equal(eng.oppKey, 'oppOne', 'cannot change opp')
   t.equal(eng.isAssigned, true, 'can change isAssigned')
   t.equal(eng.isAccepted, true, 'can change isAccepted')
@@ -134,3 +134,53 @@ test('update / project owner', async function(t) {
   t.notOk(eng.isPaid, 'cannot mark isPaid')
   t.equal(eng.paymentClientToken, 'imaprettyboy', 'cannot change payment token')
 })
+
+{
+  async function modify(s, key, values) {
+    return await s.act('role:Firebase,model:Engagements,cmd:update', {key, values})
+  }
+
+  async function makeChange(s, key, oppKey, userRole) {
+    return await s.act('role:Engagements,cmd:update', {key, values:{oppKey}, userRole})
+  }
+
+  async function changeMade(s, key, oppKey) {
+    const {engagement} = await s.act('role:Firebase,cmd:get', {engagement: key})
+    return engagement.oppKey === oppKey
+  }
+
+  async function ok(s, t) {
+    t.ok(await changeMade(s, 'volunteer', 'oppTwo'))
+  }
+
+  async function notOk(s, t) {
+    t.notOk(await changeMade(s, 'volunteer', 'oppTwo'))
+  }
+
+  test('update / change opp / volunteer', async function(t) {
+    await makeChange(this, 'volunteer', 'oppTwo', 'volunteer')
+    await notOk(this, t)
+  })
+
+  test('update / change opp / confirmed eng', async function(t) {
+    await modify(this, 'volunteer', {isConfirmed: true})
+    await makeChange(this, 'volunteer', 'oppTwo', 'project')
+    await notOk(this, t)
+  })
+
+  test('update / change opp / wrong project', async function(t) {
+    await makeChange(this, 'volunteer', 'festTwoOppOne', 'project')
+    await notOk(this, t)
+  })
+
+  test('update / change opp', async function(t) {
+    await makeChange(this, 'volunteer', 'oppTwo', 'project')
+    await ok(this, t)
+  })
+
+  test('update / change opp / updates memberships', async function(t) {
+    await makeChange(this, 'volunteer', 'oppTwo', 'project')
+    const {membership} = await this.act('role:Firebase,cmd:get', {membership: 'volunteerTestTeam'})
+    t.equal(membership.oppKey, 'oppTwo')
+  })
+}

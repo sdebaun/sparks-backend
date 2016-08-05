@@ -354,42 +354,6 @@ export default function() {
     }
   })
 
-  add('role:Auth,model:Engagements,cmd:create', async function({uid, oppKey, profileKey}) {
-    const {profile, opp} = await this.act('role:Firebase,cmd:get', {
-      profile: {uid},
-      opp: oppKey,
-    })
-
-    if (profile.$key !== profileKey && !profile.isAdmin) {
-      return {reject: 'Cannot apply another user to this engagement'}
-    }
-
-    return {opp}
-  })
-
-  // Engagements
-  add('role:Auth,model:Engagements', async function({uid, key, cmd}) {
-    const {profile, engagement, opp} = await this.act('role:Firebase,cmd:get', {
-      profile: {uid},
-      engagement: key,
-      opp: ['engagement', 'oppKey'],
-    })
-
-    if (profile.isAdmin) {
-      return {profile, engagement, userRole: 'project'}
-    }
-
-    if (profile.$key === engagement.profileKey) {
-      return {profile, engagement, userRole: 'volunteer'}
-    }
-
-    if (cmd === 'update' || cmd === 'remove') {
-      return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
-    }
-
-    return {reject: 'Not authorized to modify engagement'}
-  })
-
   // Memberships
   add('role:Auth,model:Memberships', async function({uid, key}) {
     const {membership} = await this.act('role:Firebase,cmd:get', {membership: key})
@@ -411,17 +375,6 @@ export default function() {
       return {profile, engagement, userRole: 'volunteer'}
     } else {
       return await this.act('role:Auth,model:Projects,cmd:update', {uid, key: opp.projectKey})
-    }
-  })
-
-  /*
-  * Try/catch wrapper that converts errors into rejections
-  */
-  this.wrap('role:Auth', async function(msg) {
-    try {
-      return await this.prior(msg)
-    } catch (error) {
-      return {reject: error, error}
     }
   })
 
