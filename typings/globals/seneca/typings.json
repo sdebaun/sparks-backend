@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/ab66857cff995a58524c5f450db63e41ba3ecf9d/seneca/seneca.d.ts",
+    "raw": "registry:dt/seneca#2.1.0+20160619034151",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/ab66857cff995a58524c5f450db63e41ba3ecf9d/seneca/seneca.d.ts"
+  }
+}

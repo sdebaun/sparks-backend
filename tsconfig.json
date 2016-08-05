@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "target": "es6"
+  },
+  "files": [
+    "typings/index.d.ts",
+    "src/types.d.ts",
+    "src/firebase.d.ts",
+    "src/index.ts"
+  ]
+}
