@@ -1,24 +1,25 @@
-import tape from 'test/tape-seneca'
+import tape from '../test/tape-seneca'
+import authTest from '../test/auth'
 import role from './index'
-import authTest from 'test/auth'
 
 const test = tape('Auth / Arrivals', [role])
 const {accepts, rejects} = authTest(test)
 
 {
+  const msg = {model:'Arrivals', role: 'Auth'}
+
   const msgs = [
     {cmd:'create',projectKey:'testFest',profileKey:'volunteer'},
     {cmd:'remove',key:'volunteer'},
   ]
 
   for (let pmsg of msgs) {
-    const msg = {...pmsg, model:'Arrivals', role:'Auth'}
-    rejects({...msg, uid:'123'})
-    rejects({...msg, uid:'volunteer'})
-    rejects({...msg, uid:'teamLead'})
-    accepts({...msg, uid:'organizer'})
-    accepts({...msg, uid:'eap'})
-    accepts({...msg, uid:'admin'})
+    rejects(msg, pmsg, {uid:'123'})
+    rejects(msg, pmsg, {uid:'volunteer'})
+    rejects(msg, pmsg, {uid:'teamLead'})
+    accepts(msg, pmsg, {uid:'organizer'})
+    accepts(msg, pmsg, {uid:'eap'})
+    accepts(msg, pmsg, {uid:'admin'})
   }
 }
 

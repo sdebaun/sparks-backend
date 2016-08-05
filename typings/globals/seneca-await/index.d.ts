@@ -110,9 +110,7 @@ declare module "seneca-await" {
             },
             // zig module settings for seneca.start() chaining.
             zig?: any;
-            log?: {
-                short?: boolean;
-            };
+            log?: Object;
             errhandler?: GlobalErrorHandler;
         }
 

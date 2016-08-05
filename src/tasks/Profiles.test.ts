@@ -1,4 +1,4 @@
-import tape from 'test/tape-seneca'
+import tape from '../test/tape-seneca'
 import Profiles from './Profiles'
 
 const test = tape('Profiles', [Profiles])

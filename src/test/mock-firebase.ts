@@ -1,6 +1,7 @@
-import Inflection from 'inflection'
-import R, {
-  keys, objOf, values, whereEq, find, mergeAll, filter, mapObjIndexed, lensPath, propEq,
+import * as Inflection from 'inflection'
+import * as R from 'ramda'
+import {
+  keys, objOf, values, whereEq, find, merge, mergeAll, filter, mapObjIndexed, lensPath, propEq,
 } from 'ramda'
 
 function mockFirebase() {
@@ -9,7 +10,7 @@ function mockFirebase() {
 
   function set(fixtures) {
     const withKeys = mapObjIndexed(
-      (fixture, $key) => ({...fixture, $key})
+      (fixture, $key) => (merge(fixture, {$key}))
     )
 
     for (let key of keys(fixtures)) {
@@ -105,12 +106,12 @@ function mockFirebase() {
     const key = generateKey()
 
     const lens = lensPath([model.toLowerCase(), key])
-    store = R.set(lens, {...values, $key: key}, store)
+    store = R.set(lens, merge(values, {$key: key}), store)
 
     return {key}
   })
 
-  this.add({role:'Firebase',cmd:'update'}, async function(msg) {
+  this.add({role:'Firebase',cmd:'update'}, async function(msg):Promise<TaskResponse> {
     const {key, values, model} = msg
     const lens = lensPath([model.toLowerCase(), key])
     const item = R.view(lens, store)
@@ -118,7 +119,7 @@ function mockFirebase() {
     if (!item) {
       return {error: 'Item not found'}
     } else {
-      const newItem = {...item, ...values}
+      const newItem = merge(item, values)
       store = R.set(lens, newItem, store)
       return {key}
     }

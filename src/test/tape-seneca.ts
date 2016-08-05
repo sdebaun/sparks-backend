@@ -1,8 +1,9 @@
-import tapeTest from 'tape-async'
-import Seneca from 'seneca-await'
-import mockFirebase from 'test/mock-firebase'
+/// <reference path="../tape-async.d.ts" />
+import * as tapeTest from 'tape-async'
+import * as Seneca from 'seneca-await'
+import mockFirebase from './mock-firebase'
 import firebaseGet from '../firebase-get'
-import fixtures from 'test/fixtures'
+import fixtures from './fixtures'
 
 function tape(namespace, plugins) {
   const seneca = Seneca({
@@ -22,7 +23,7 @@ function tape(namespace, plugins) {
     seneca.use(plugin)
   }
 
-  function test(msg, fn, testFn = tapeTest) {
+  function testFn(msg, fn, testFn = tapeTest) {
     seneca
       .ready(function() {
         const bound = fn.bind(seneca)
@@ -39,6 +40,8 @@ function tape(namespace, plugins) {
         testFn(`${namespace} / ${msg}`, testWithRollback)
       })
   }
+
+  const test = testFn as any
 
   test.only = (msg, fn) => test(msg, fn, tapeTest.only)
   test.seneca = seneca

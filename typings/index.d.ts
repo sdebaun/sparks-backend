@@ -10,3 +10,4 @@
 /// <reference path="modules/es6-promise/index.d.ts" />
 /// <reference path="modules/mime/index.d.ts" />
 /// <reference path="modules/ramda/index.d.ts" />
+/// <reference path="modules/tape/index.d.ts" />

@@ -12,6 +12,7 @@
   "dependencies": {
     "es6-promise": "registry:npm/es6-promise#3.0.0+20160723033700",
     "mime": "registry:npm/mime#1.3.0+20160723033700",
-    "ramda": "registry:npm/ramda#0.21.0+20160531162943"
+    "ramda": "registry:npm/ramda#0.21.0+20160531162943",
+    "tape": "registry:npm/tape#4.0.0+20160723033700"
   }
 }

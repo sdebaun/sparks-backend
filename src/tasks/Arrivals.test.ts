@@ -1,11 +1,12 @@
-import tape from 'test/tape-seneca'
+import tape from '../test/tape-seneca'
 import Arrivals from './Arrivals'
 
 const test = tape('Arrivals', [Arrivals])
 
 test('create', async function(t) {
+  const {profile} = await this.act('role:Firebase,cmd:get', {profile: 'admin'})
   const {key} = await this.act('role:Arrivals,cmd:create', {
-    ...(await this.act('role:Firebase,cmd:get', {profile: 'admin'})),
+    profile,
     profileKey: 'volTwo',
     projectKey: 'testFest',
   })
@@ -21,8 +22,9 @@ test('create', async function(t) {
 })
 
 test('create twice causes error', async function(t) {
+  const {profile} = await this.act('role:Firebase,cmd:get', {profile: 'admin'})
   const {key, error} = await this.act('role:Arrivals,cmd:create', {
-    ...(await this.act('role:Firebase,cmd:get', {profile: 'admin'})),
+    profile,
     profileKey: 'volunteer',
     projectKey: 'testFest',
   })

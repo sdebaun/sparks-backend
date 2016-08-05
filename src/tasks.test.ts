@@ -1,5 +1,5 @@
 import {difference, compose, filter, allPass, apply, prop, not} from 'ramda'
-import tape from 'test/tape-seneca'
+import tape from './test/tape-seneca'
 import Tasks from './tasks'
 import Auth from './auth'
 
@@ -13,9 +13,9 @@ test('auth for every task', async function(t) {
 
   const afterTasks = this.list()
 
-  const tasks = compose(
+  const tasks = compose<any[], any[], any[]>(
     filter(allPass([prop('role'), prop('cmd')])),
-    apply(difference),
+    apply<any, any>(difference),
   )([afterTasks, beforeTasks])
 
   this.use(Auth)

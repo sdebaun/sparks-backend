@@ -1,4 +1,4 @@
-import tape from 'test/tape-seneca'
+import tape from '../test/tape-seneca'
 import Engagements from './Engagements'
 import {append} from 'ramda'
 
@@ -30,10 +30,11 @@ function shifts() {
 }
 
 const tapeTest = tape('Engagements', [email, braintree, shifts, Engagements])
-function test(...args) {
+function testFn(...args) {
   emailsSent = []
   tapeTest(...args)
 }
+const test = testFn as any
 test.only = tapeTest.only
 
 test('create', async function(t) {

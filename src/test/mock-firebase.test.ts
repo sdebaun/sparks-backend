@@ -1,6 +1,7 @@
-import tapeTest from 'tape-async'
-import Seneca from 'seneca-await'
-import mockFirebase from 'test/mock-firebase'
+/// <reference path="../tape-async.d.ts" />
+import * as tapeTest from 'tape-async'
+import * as Seneca from 'seneca-await'
+import mockFirebase from './mock-firebase'
 import {prop, T} from 'ramda'
 
 const log = {map:[{level:'all',handler:T}]}
@@ -25,7 +26,7 @@ const people = {
 }
 
 seneca.ready(function() {
-  function test(msg, fn, testFn = tapeTest) {
+  function testFn(msg, fn, testFn = tapeTest) {
     const bound = fn.bind(seneca)
 
     async function fnWithRestore(t) {
@@ -35,6 +36,7 @@ seneca.ready(function() {
 
     testFn(`mockFirebase / ${msg}`, fnWithRestore)
   }
+  const test = testFn as any
   test.only = function(msg, fn) { test(msg, fn, tapeTest.only) }
 
   test('Fixtures / set / get', async function(t) {

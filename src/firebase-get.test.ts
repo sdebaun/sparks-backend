@@ -1,4 +1,4 @@
-import tape from 'test/tape-seneca'
+import tape from './test/tape-seneca'
 import {type} from 'ramda'
 
 const test = tape('FirebaseGet', [])
