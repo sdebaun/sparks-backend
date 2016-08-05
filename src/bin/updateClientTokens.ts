@@ -24,7 +24,8 @@ const fb = new Firebase(cfg.FIREBASE_HOST)
 
 fb.authWithCustomToken(cfg.FIREBASE_TOKEN, err => {
   if (err) {
-    console.log('FB Auth err:',err); process.exit()
+    console.log('FB Auth err:',err)
+    process.exit()
   } else {
     console.log('FB Authed successfully')
   }

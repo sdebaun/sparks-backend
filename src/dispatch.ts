@@ -61,6 +61,7 @@ export const startDispatch = (ref, seneca) => {
         return response
       } catch (err) {
         log('queue error', err, domain, action, uid, payload)
+        return {error: err}
       }
     } catch (authErr) {
       log('queue error', authErr, domain, action, uid, payload)

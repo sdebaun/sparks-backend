@@ -10,11 +10,13 @@ export const isEAP = propOr(false, 'isEAP')
 
 export const isUser = (profile, key) => profile && profile.$key === key
 
+type ObjectRule = (Object) => boolean
+
 // Rules
-const profileIsAdmin = pathOr(false, ['profile', 'isAdmin'])
-const profileIsEAP = pathOr(false, ['profile', 'isEAP'])
-const profileIsObjectOwner = model =>
-  compose<Object, Array<string>, boolean>(
+const profileIsAdmin = pathOr<boolean>(false, ['profile', 'isAdmin'])
+const profileIsEAP = pathOr<boolean>(false, ['profile', 'isEAP'])
+function profileIsObjectOwner(model:string):ObjectRule {
+  return compose<Object, Array<string>, boolean>(
     allPass([
       all(Boolean),
       apply<any, any>(equals)
@@ -24,32 +26,33 @@ const profileIsObjectOwner = model =>
       pathOr(false, [model, 'ownerProfileKey']),
     ])
   )
-const profileIsProjectOwner = profileIsObjectOwner('project')
-const profileIsOppOwner = profileIsObjectOwner('opp')
-const profileIsTeamOwner = profileIsObjectOwner('team')
+}
+const profileIsProjectOwner:ObjectRule = profileIsObjectOwner('project')
+const profileIsOppOwner:ObjectRule = profileIsObjectOwner('opp')
+const profileIsTeamOwner:ObjectRule = profileIsObjectOwner('team')
 
-const profileIsActiveOrganizer = compose(
-    apply(contains),
-    juxt([
+const profileIsActiveOrganizer = compose<Object, Object[], boolean>(
+    apply<Object[], boolean>(contains),
+    juxt<Object, Object[]>([
       path(['profile', '$key']),
-      compose(
-        map(prop('profileKey')),
+      compose<Object, any, string[]>(
+        map<Object, string>(prop('profileKey')),
         prop('organizers')
       ),
     ])
   )
 
-const profileAndProject = allPass([
+const profileAndProject:ObjectRule = allPass([
   prop('profile'),
   prop('project'),
 ])
 
-const createProjectRules = anyPass([
+const createProjectRules:ObjectRule = anyPass([
   profileIsAdmin,
   profileIsEAP,
 ])
 
-const updateProjectRules = allPass([
+const updateProjectRules:ObjectRule = allPass([
   profileAndProject,
   anyPass([
     profileIsAdmin,
@@ -58,7 +61,7 @@ const updateProjectRules = allPass([
   ]),
 ])
 
-const removeProjectRules = allPass([
+const removeProjectRules:ObjectRule = allPass([
   profileAndProject,
   anyPass([
     profileIsAdmin,
@@ -66,10 +69,10 @@ const removeProjectRules = allPass([
   ]),
 ])
 
-const updateTeamRules = anyPass([profileIsTeamOwner, updateProjectRules])
-const updateOppRules = anyPass([profileIsOppOwner, updateProjectRules])
+const updateTeamRules:ObjectRule = anyPass([profileIsTeamOwner, updateProjectRules])
+const updateOppRules:ObjectRule = anyPass([profileIsOppOwner, updateProjectRules])
 
-function pass(ruleFn, rejectionMsg, respond) {
+function pass(ruleFn:ObjectRule, rejectionMsg:string, respond) {
   if (typeof respond === 'object') {
     if (ruleFn(respond)) {
       return respond

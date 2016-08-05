@@ -165,20 +165,20 @@ function Engagements() {
     deposit: number
   }
 
-  const commitmentPayment = compose(extractAmount, pathOr(0, ['payment', 'amount']))
-  const commitmentDeposit = compose(extractAmount, pathOr(0, ['deposit', 'amount']))
-  const commitmentTotal = compose(
+  const commitmentPayment = compose<Object, number | string, number>(extractAmount, pathOr(0, ['payment', 'amount']))
+  const commitmentDeposit = compose<Object, number | string, number>(extractAmount, pathOr(0, ['deposit', 'amount']))
+  const commitmentTotal = compose<Object, number[], number>(
     sum,
-    applySpec([commitmentPayment, commitmentDeposit])
+    applySpec<number[]>([commitmentPayment, commitmentDeposit])
   )
 
-  const commitmentsTotal = compose(sum, map(commitmentTotal))
-  const commitmentsAmounts:(any) => any = applySpec({
+  const commitmentsTotal = compose<Array<Object>, number[], number>(sum, map(commitmentTotal))
+  const commitmentsAmounts = applySpec<PaymentDepositAmounts>({
     payment: compose(sum, map(commitmentPayment)),
     deposit: compose(sum, map(commitmentDeposit)),
   })
 
-  async function oppTotal(oppKey) { // eslint-disable-line
+  async function oppTotal(oppKey):Promise<number> {
     const {commitments} = await seneca.act('role:Firebase,cmd:get', {commitments: {oppKey}})
     return commitmentsTotal(commitments)
   }
@@ -202,8 +202,8 @@ function Engagements() {
       isConfirmed: true,
     }})
 
-    // Send the email in the background
-    this.act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement})
+    // Send the email
+    await this.act({role:'Engagements',cmd:'sendEmail',email:'confirmed',key,uid,engagement})
 
     return {key}
   })

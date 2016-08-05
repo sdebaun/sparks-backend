@@ -6,8 +6,8 @@ import cfg from './cfg'
 
 const app = express()
 
-app.get('/', (req,res) => res.send('Hello World!'))
-app.listen(cfg.PORT, () => console.log('Listening on ',cfg.PORT))
+app.get('/', (req, res) => res.send('Hello World!'))
+app.listen(cfg.PORT, () => console.log('Listening on ', cfg.PORT))
 
 const seneca = Seneca({
   // Don't crash it when an error occurs
@@ -16,14 +16,14 @@ const seneca = Seneca({
   },
   // IF we do not set this then we'd have to rewrite the firebase tasks to wrap
   // the return in an object key/pair
-  strict:{result:false},
+  strict: {result: false},
 })
 
 seneca.use(senecaSn, {cfg})
 
 seneca.ready()
   .then(function() {
-    seneca.act({role:'Firebase'})
+    seneca.act({role: 'Firebase'})
       .then(function({fb}) {
         console.log('Starting dispatch')
         startDispatch(fb.child('!queue'), seneca)

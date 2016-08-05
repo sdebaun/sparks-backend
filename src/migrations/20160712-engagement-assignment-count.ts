@@ -6,7 +6,7 @@ async function migrate() {
   const {fb} = await seneca.act({role:'Firebase'})
 
   console.log('Loading engagements')
-  const engagements = await fb.child('Engagements').once('value').then(s=>s.val())
+  const engagements = await fb.child('Engagements').once('value').then(s => s.val())
 
   const isitworking = await engagements.map(async function(engagement) {
     return 'hello'
