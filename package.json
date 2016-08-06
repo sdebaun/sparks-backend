@@ -63,6 +63,7 @@
     "sendgrid": "^2.0.0",
     "seneca": "^2.1.0",
     "seneca-await": "0.0.12",
+    "ts-node": "^1.2.2",
     "typescript": "^2.1.0-dev.20160804"
   }
 }
