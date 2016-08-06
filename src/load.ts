@@ -1,5 +1,5 @@
 import senecaSn from './seneca-sn'
-import Seneca from 'seneca-await'
+import * as Seneca from 'seneca-await'
 import cfg from './cfg'
 
 const seneca = Seneca()

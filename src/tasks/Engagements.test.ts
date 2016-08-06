@@ -10,7 +10,7 @@ function braintree() {
   return 'braintree'
 }
 
-let emailsSent = []
+let emailsSent:any[] = []
 function email() {
   this.add('role:email,cmd:send', async function(msg) {
     emailsSent = append(msg, emailsSent)
@@ -57,7 +57,7 @@ test('create', async function(t) {
   t.equal(eng.paymentClientToken, 'paymenowyoubastard', 'generated payment client token')
 
   t.equal(emailsSent.length, 1)
-  const email = emailsSent[0]
+  const email = emailsSent[0] as any
   t.equal(email.subject, 'New Engagement for')
   t.equal(email.profileKey, 'volTwo')
   t.equal(email.oppKey, 'oppOne')

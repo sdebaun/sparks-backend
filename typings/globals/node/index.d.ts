@@ -2157,6 +2157,7 @@ declare module "util" {
     }
 
     export function format(format: any, ...param: any[]): string;
+    export function format(...param: any[]): string;
     export function debug(string: string): void;
     export function error(...param: any[]): void;
     export function puts(...param: any[]): void;

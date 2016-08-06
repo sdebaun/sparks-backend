@@ -13,9 +13,7 @@ async function migrate() {
   })
 
   console.log(isitworking)
-
-  seneca.close()
-  process.exit()
+  seneca.close(() => process.exit())
 }
 
 migrate()

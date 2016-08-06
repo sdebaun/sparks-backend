@@ -7,7 +7,6 @@
 /// <reference path="globals/seneca-await/index.d.ts" />
 /// <reference path="globals/seneca/index.d.ts" />
 /// <reference path="globals/serve-static/index.d.ts" />
-/// <reference path="modules/es6-promise/index.d.ts" />
 /// <reference path="modules/mime/index.d.ts" />
 /// <reference path="modules/ramda/index.d.ts" />
 /// <reference path="modules/tape/index.d.ts" />

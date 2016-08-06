@@ -4,12 +4,13 @@
     "outDir": "./dist",
     "moduleResolution": "node",
     "target": "es6",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "lib": [
+      "es6",
+      "es2015.promise"
+    ]
   },
-  "files": [
-    "typings/index.d.ts",
-    "src/types.d.ts",
-    "src/firebase.d.ts",
-    "src/index.ts"
+  "exclude": [
+    "node_modules"
   ]
 }
