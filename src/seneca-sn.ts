@@ -28,17 +28,8 @@ export default function({cfg}) {
   seneca.use(firebaseGet)
   seneca.use(email)
   seneca.use(braintree, cfg)
-
-  seneca.ready(() => {
-    seneca.act({role:'Firebase',cmd:'Models'}, (err, {models}) => {
-      const remote = {models}
-
-      seneca.use(tasks, remote)
-      seneca.ready(() => {
-        seneca.use(auth, {collections})
-      })
-    })
-  })
+  seneca.use(tasks, {})
+  seneca.use(auth, {collections})
 
   return 'sn'
 }

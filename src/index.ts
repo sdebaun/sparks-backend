@@ -19,13 +19,12 @@ const seneca = Seneca({
   strict: {result: false},
 })
 
-seneca.use(senecaSn, {cfg})
+async function start() {
+  seneca.use(senecaSn, {cfg})
+  await seneca.ready()
+  const {fb} = await seneca.act({role: 'Firebase'})
+  console.log('Starting dispatch')
+  startDispatch(fb.child('!queue'), seneca)
+}
 
-seneca.ready()
-  .then(function() {
-    seneca.act({role: 'Firebase'})
-      .then(function({fb}) {
-        console.log('Starting dispatch')
-        startDispatch(fb.child('!queue'), seneca)
-      })
-  })
+start()
